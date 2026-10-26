@@ -393,8 +393,8 @@ body:has(.modal[open]){overflow:hidden}
       <a class="util" href="#login" data-action="cuenta" id="btn-cuenta" aria-label="Mi cuenta">
         <span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></span><span class="txt" id="txt-cuenta" aria-hidden="true">Mi cuenta</span>
       </a>
-      <a class="util" href="#carrito" data-go="carrito" id="btn-carrito" aria-label="Carrito, 1 producto">
-        <span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h11l2-8H6.2"/><circle cx="9" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/></svg><span class="contador" id="contador" aria-hidden="true">1</span></span><span class="txt" aria-hidden="true">Carrito</span>
+      <a class="util" href="#carrito" data-go="carrito" id="btn-carrito" aria-label="Carrito, 0 productos">
+        <span class="ico"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h11l2-8H6.2"/><circle cx="9" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/></svg><span class="contador" id="contador" aria-hidden="true" style="display:none">0</span></span><span class="txt" aria-hidden="true">Carrito</span>
       </a>
     </div>
   </div>
@@ -553,17 +553,12 @@ function precioDesde(p, sel){
 }
 
 /* ---------- Estado ---------- */
-function ejemploCarrito(){
-  const p = P_PERS, sel = p.o.map(o => { const want = /color/i.test(o.l) ? 'cremita' : /talle/i.test(o.l) ? 'oversize talle m' : 'no'; const j = o.v.findIndex(v => fold(v).indexOf(want) === 0); return j >= 0 ? j : 0; });
-  const v = variante(p, sel);
-  return { tipo:'personalizado', id:p.id, nombre:'Buzo personalizado', detalle:p.o.map((o, k) => o.l + ': ' + o.v[sel[k]]).join(' · '), cantidad:1, precio:v ? v[p.o.length] : p.p, foto:foto(p, 0), archivo:'mi-idea-bordado.png', url:null, texto:'Mi perro con una corona, en el pecho' };
-}
 const S = {
   vista:'inicio',
   filtros:{ prenda:'Todas', tema:'Todas', coleccion:'Todas', stock:'Todos', q:'', orden:'Destacados' },
   ficha:{ id:P_INICIAL.id, sel:selInicial(P_INICIAL), cantidad:1, foto:0, err:false, sinStock:false, cp:'', envio:false, errCp:false },
   idea:{ sel:selInicial(P_PERS), archivo:null, url:null, texto:'', err:false, errOp:false },
-  carrito:[ ejemploCarrito() ],
+  carrito:[],
   envio:{ cp:'1425', opcion:'sucursal', errCp:false },
   pago:'tarjeta',
   pedido:null, pedidos:[],
