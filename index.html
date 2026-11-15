@@ -260,6 +260,8 @@ main{display:block;padding-block:28px 72px}
 .acc-btn:hover{background:var(--crema)}
 .acc-panel{padding:4px 22px 24px;display:flex;flex-direction:column;gap:16px}
 .acc-panel[hidden]{display:none}
+.sin-foto{position:absolute;left:12px;right:12px;bottom:12px;margin:0;display:flex;gap:8px;align-items:flex-start;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.95);font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.sin-foto svg{width:18px;height:18px;flex:none;margin-top:1px}
 .info-prenda{margin:0;display:flex;flex-direction:column;gap:12px;padding:16px 18px;border-radius:16px;background:var(--crema)}
 .info-prenda dt{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px}
 .info-prenda dt svg{width:18px;height:18px;flex:none}
@@ -567,8 +569,8 @@ const ENVIOS = { sucursal:{ nombre:'Retiro en sucursal', precio:6500 }, domicili
 const MAPA_COLOR = [['celeste bandera','#75AADB'],['celeste pastel','#C7DFF2'],['azul francia','#2F5DA8'],['azul marino','#263552'],['azul gastado','#5B7391'],['azul petroleo','#1E4A5A'],['gris melange','#B8BCC2'],['gris oscuro','#4A4F57'],['gris gastado','#8E9196'],['verde ingles','#1F4D3A'],['bordo gastado','#7E3B46'],['camel gastado','#B58B5E'],['cremita','#EFE3CC'],['beige','#DCCBB0'],['blanco','#FFFFFF'],['negro','#22252B'],['lila','#C9B6E4'],['celeste','#A9CDEB'],['frambuesa','#C2185B'],['rojo','#C62828'],['bordo','#6D1A2A'],['rosa','#F4B6C8'],['verde','#3E8E5A'],['marron','#7A5236'],['amarill','#F2C230'],['azul','#2F5DA8'],['dorado','#C9A227'],['plateado','#B9BEC4']];
 function hexes(nombre){
   let f = fold(nombre); const out = [];
-  for (const [k, h] of MAPA_COLOR){ if (f.indexOf(k) >= 0){ out.push(h); f = f.split(k).join(' '); if (out.length === 2) break; } }
-  return out;
+  for (const [k, h] of MAPA_COLOR){ const i = f.indexOf(k); if (i >= 0){ out.push([i, h]); f = f.split(k).join(' '.repeat(k.length)); } }
+  return out.sort((a, b) => a[0] - b[0]).slice(0, 2).map(x => x[1]);
 }
 function fondoColor(nombre){ const h = hexes(nombre); if (!h.length) return null; return h.length === 1 ? h[0] : 'linear-gradient(135deg,' + h[0] + ' 50%,' + h[1] + ' 50%)'; }
 const esOpColor = o => /^color/i.test(o.l) && o.v.every(v => hexes(v).length);
@@ -883,7 +885,7 @@ function vFicha(){
   return '<div class="vista">' +
     '<nav class="ruta" aria-label="Ruta"><a href="#inicio" data-go="inicio">Inicio</a><span aria-hidden="true">›</span><a href="#catalogo" data-go="catalogo" data-mantener="1">Catálogo</a><span aria-hidden="true">›</span><span aria-current="page">' + esc(p.n) + '</span></nav>' +
     '<div class="dos-col">' +
-      '<div class="galeria"><div class="foto-principal">' + principal + '</div><div class="miniaturas" role="group" aria-label="Fotos del producto">' + thumbs + '</div></div>' +
+      '<div class="galeria"><div class="foto-principal">' + principal + (F.sinFoto ? '<p class="sin-foto" role="status">' + ICO.info + '<span>Todavía no tenemos foto de la versión <strong>' + esc(F.sinFoto) + '</strong>. La foto muestra otro color.</span></p>' : '') + '</div><div class="miniaturas" role="group" aria-label="Fotos del producto">' + thumbs + '</div></div>' +
       '<div class="panel-compra">' +
         '<div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">' + etqDisp(p) + '<h1 tabindex="-1" id="titulo-vista">' + esc(p.n) + '</h1>' + desc + '</div>' +
         bloquePrecio(p, F.sel) +
@@ -1241,7 +1243,7 @@ function ir(vista, datos, desdeHistorial){
   $('#q').value = vista === 'catalogo' ? S.filtros.q : '';
   if (vista === 'ficha' && datos.producto){
     const p = prod(datos.producto);
-    if (p && p.id !== S.ficha.id) S.ficha = { id:p.id, sel:selInicial(p), cantidad:1, foto:0, err:false, sinStock:false, cp:S.ficha.cp, envio:S.ficha.envio, errCp:false, extra:'' };
+    if (p && p.id !== S.ficha.id) S.ficha = { id:p.id, sel:selInicial(p), cantidad:1, foto:0, err:false, sinStock:false, cp:S.ficha.cp, envio:S.ficha.envio, errCp:false, extra:'', sinFoto:null };
   }
   if (vista === 'cambios') S.cambios.abierto = (datos.caso != null && datos.caso !== '') ? Number(datos.caso) : -1;
   if ((vista === 'login' || vista === 'registro') && S.usuario) vista = 'cuenta';
@@ -1312,7 +1314,10 @@ const FOTO_VAR = [
   ['spiderman-navideno-rustico', 'Color', { 'Blanco':'69824ec3', 'Negro':'img_0554', 'Celeste':'img_2702' }],
   ['spiderman-navideno-frizado', 'Color', { 'Blanco':'69824ec3', 'Gris oscuro':'img_0554' }],
   ['casas-hp-', 'Casa de Hogwarts', { 'Gryffindor':'img_1778', 'Slytherin':'img_9405', 'Hufflepuff':'img_1571', 'Ravenclaw':'img_1482' }],
-  ['casas-de-hogwarts', 'Casa de Hogwarts', { 'Gryffindor':'301851ef', 'Slytherin':'3d77841f', 'Hufflepuff':'img_1571', 'Ravenclaw':'img_1482' }]
+  ['casas-de-hogwarts', 'Casa de Hogwarts', { 'Gryffindor':'301851ef', 'Slytherin':'3d77841f', 'Hufflepuff':'img_1571', 'Ravenclaw':'img_1482' }],
+  /* null = la tienda no tiene foto real de esa variante: se avisa en vez de inventarla */
+  ['hoodie-spiderman', 'Color', { 'Rojo (hilo negro)':'5-', 'Rojo con recorte azul marino (hilo negro)':'4-', 'Rojo con recorte azul francia (hilo negro)':'3-', 'Negro (hilo rojo)':null }],
+  ['campera-spiderman', 'Color', { 'Rojo (hilo negro)':'image00001', 'Negro (hilo rojo)':null }]
 ];
 (function(){ // la ficha "a pedido" de Hogwarts no tiene foto suelta de dos casas: se suman las de la versión en stock
   const ap = CAT.find(p => p.id.indexOf('casas-de-hogwarts') === 0), st = CAT.find(p => p.id.indexOf('casas-hp-frizados') === 0);
@@ -1321,7 +1326,9 @@ const FOTO_VAR = [
 function fotoVariante(p, k, j){
   const r = FOTO_VAR.find(r => p.id.indexOf(r[0]) === 0 && p.o[k].l === r[1]);
   if (!r) return -1;
-  const pref = r[2][p.o[k].v[j]];
+  const v = p.o[k].v[j];
+  if (r[2][v] === null) return -2;
+  const pref = r[2][v];
   return pref ? p.f.findIndex(f => f.indexOf(pref) === 0) : -1;
 }
 
@@ -1332,7 +1339,8 @@ function elegirOp(scope, k, j){
   const n = p.o.length;
   // si al cambiar esta opción otra quedó sin stock, se limpia
   p.o.forEach((o, m) => { if (m !== k && st.sel[m] != null && !disponibles(p, st.sel, m).has(st.sel[m])) st.sel[m] = null; });
-  if (scope === 'ficha' && st.sel[k] != null){ const v = p.vs.find(v => v[k] === j && v[n+2] >= 0); if (v && esOpColor(p.o[k])) st.foto = v[n+2]; const fv = fotoVariante(p, k, j); if (fv >= 0) st.foto = fv; }
+  if (scope === 'ficha' && st.sel[k] != null){ const v = p.vs.find(v => v[k] === j && v[n+2] >= 0); if (v && esOpColor(p.o[k])) st.foto = v[n+2]; const fv = fotoVariante(p, k, j); if (fv >= 0){ st.foto = fv; st.sinFoto = null; } else if (fv === -2) st.sinFoto = p.o[k].v[j]; }
+  if (scope === 'ficha' && st.sel[k] == null && esOpColor(p.o[k])) st.sinFoto = null;
   if (scope === 'ficha') st.err = false; else st.errOp = false;
 }
 
