@@ -259,6 +259,19 @@ main{display:block;padding-block:28px 72px}
 .acc-btn{width:100%;min-height:64px;padding:0 22px;border:0;border-radius:16px;background:transparent;display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:17px;font-weight:600;text-align:left;cursor:pointer}
 .acc-btn:hover{background:var(--crema)}
 .acc-panel{padding:4px 22px 24px;display:flex;flex-direction:column;gap:16px}
+.acc-panel[hidden]{display:none}
+.info-prenda{margin:0;display:flex;flex-direction:column;gap:12px;padding:16px 18px;border-radius:16px;background:var(--crema)}
+.info-prenda dt{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px}
+.info-prenda dt svg{width:18px;height:18px;flex:none}
+.info-prenda dd{margin:2px 0 0 26px;font-size:15px;color:var(--gris)}
+.faq{display:flex;flex-direction:column;gap:10px}
+.faq details{border-radius:16px;box-shadow:0 0 0 1.5px var(--borde);padding:0 20px;background:var(--blanco)}
+.faq summary{min-height:56px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:600;cursor:pointer;list-style:none}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font-size:22px;font-weight:400}
+.faq details[open] summary::after{content:"−"}
+.faq details p{margin:0 0 18px;color:var(--gris)}
+@media (max-width:600px){.toast{font-size:14px;padding:8px 8px 8px 14px;border-radius:14px}.toast .btn-toast{min-height:40px}.toasts{bottom:calc(10px + env(safe-area-inset-bottom, 0px))}}
 .acc-panel .bloque{display:flex;flex-direction:column;gap:4px}
 
 /* Footer */
@@ -427,17 +440,6 @@ body:has(.modal[open]){overflow:hidden}
         <div class="mega-card"><h3>Vistos en Instagram</h3><p>Trabajos anteriores que no están en el catálogo.</p><a class="btn btn-secundario" href="#instagram" data-go="instagram">Entrar</a></div>
       </div>
       <div class="mega-cols">
-        <div class="campo"><h3>Colecciones y promociones</h3>
-          <div class="lista-links">
-            <button type="button" data-go="catalogo" data-coleccion="Prendas en promo">Prendas en promo</button>
-            <button type="button" data-go="catalogo" data-coleccion="Colección Argentina">Colección Argentina</button>
-            <button type="button" data-go="catalogo" data-coleccion="Colección Inmortales">Colección Inmortales</button>
-            <button type="button" data-go="catalogo" data-coleccion="BTS">BTS</button>
-            <button type="button" data-go="catalogo" data-coleccion="Los Redondos">Los Redondos</button>
-            <button type="button" data-go="catalogo" data-coleccion="Spiderman">Spiderman</button>
-            <button type="button" data-go="catalogo" data-coleccion="Sabía edición verano">Sabía edición verano</button>
-          </div>
-        </div>
         <div class="campo"><h3>Temáticas</h3>
           <div class="lista-links">
             <button type="button" data-go="catalogo" data-tematica="Universidades">Universidades</button>
@@ -447,6 +449,17 @@ body:has(.modal[open]){overflow:hidden}
             <button type="button" data-go="catalogo" data-tematica="Pelis y series">Pelis y series</button>
             <button type="button" data-go="catalogo" data-tematica="Diseños del feed">Diseños del feed</button>
             <button type="button" data-go="catalogo" data-tematica="Otros diseños">Otros diseños</button>
+          </div>
+        </div>
+        <div class="campo"><h3>Colecciones y promociones</h3>
+          <div class="lista-links">
+            <button type="button" data-go="catalogo" data-coleccion="Prendas en promo">Prendas en promo</button>
+            <button type="button" data-go="catalogo" data-coleccion="Colección Argentina">Colección Argentina</button>
+            <button type="button" data-go="catalogo" data-coleccion="Colección Inmortales">Colección Inmortales</button>
+            <button type="button" data-go="catalogo" data-coleccion="BTS">BTS</button>
+            <button type="button" data-go="catalogo" data-coleccion="Los Redondos">Los Redondos</button>
+            <button type="button" data-go="catalogo" data-coleccion="Spiderman">Spiderman</button>
+            <button type="button" data-go="catalogo" data-coleccion="Sabía edición verano">Sabía edición verano</button>
           </div>
         </div>
         <div class="campo"><h3>También podés empezar por la prenda</h3>
@@ -513,11 +526,31 @@ const fold = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/
 const plata = n => '$' + Math.round(n).toLocaleString('es-AR');
 const plata2 = n => '$' + n.toLocaleString('es-AR', { minimumFractionDigits:2, maximumFractionDigits:2 });
 
+/* ---------- Tela: se deduce del nombre o la descripción ---------- */
+function telaDe(p){
+  const t = fold(p.n + ' ' + p.d);
+  if (/frisa|friza|frisad/.test(t)) return { n:'Frisa (frizado)', d:'Tiene felpa por dentro: es la más abrigada, ideal para invierno.', peso:'Abrigada' };
+  if (/rustic/.test(t)) return { n:'Algodón rústico', d:'Sin felpa: es más liviano, ideal para media estación.', peso:'Liviana' };
+  if (/jersey|algodon peinado/.test(t) || p.pr === 'Remeras y crop tops') return { n:'Jersey de algodón', d:'Tela de remera, fresca y liviana.', peso:'Liviana' };
+  return null;
+}
+const PLAZO_PEDIDO = 'hasta 2 semanas', ENVIO_DIAS = '3 a 7 días hábiles';
+function plazoTexto(p){ return p.s ? 'Listo para enviar: lo despachamos en 1 o 2 días hábiles.' : 'Se borda a pedido: ' + (p.espera ? p.espera + ' días' : PLAZO_PEDIDO) + ' de confección.'; }
+/* Etiquetas de opciones más claras (los textos vienen de la tienda y no son uniformes) */
+function etqOp(v){
+  let s = String(v).replace(/^Oversize (?!talle)/i, 'Oversize talle ').replace(/talle ([sml]|xs|xl)\b/gi, (m, t) => 'talle ' + t.toUpperCase()).replace(/\b(xs\/s|m\/l)\b/gi, m => m.toUpperCase());
+  s = s.replace(/^Si \(adicional de (\d+) pesos\)$/i, (m, n) => 'Sí (+' + plata(Number(n)) + ')').replace(/^No \(no lleva adicional\)$/i, 'No');
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 /* ---------- Catálogo real (113 productos de la tienda) ---------- */
 const CAT = JSON.parse(document.getElementById('catalogo').textContent);
 CAT.forEach((p, i) => {
   p.orden = i;
   p.idx = fold([p.n, p.pr, p.t.join(' '), p.c.join(' '), p.s ? 'en stock listo para enviar' : 'a pedido', p.o.map(o => o.l + ' ' + o.v.join(' ')).join(' '), p.d].join(' '));
+  p.nom = fold(p.n);
+  p.pal = Array.from(new Set(fold([p.n, p.t.join(' '), p.c.join(' '), p.o.map(o => o.v.join(' ')).join(' ')].join(' ')).split(/[^a-z0-9ñ]+/).filter(w => w.length >= 4)));
+  p.tela = telaDe(p); p.espera = (p.d.match(/tiempo de espera:?\s*(\d+)\s*d[ií]as/i) || [])[1];
 });
 const prod = id => CAT.find(p => p.id === id);
 const porNombre = n => CAT.find(p => p.n === n);
@@ -565,7 +598,7 @@ const S = {
   ficha:{ id:P_INICIAL.id, sel:selInicial(P_INICIAL), cantidad:1, foto:0, err:false, sinStock:false, cp:'', envio:false, errCp:false },
   idea:{ sel:selInicial(P_PERS), archivo:null, url:null, texto:'', err:false, errOp:false, hilo:'original', tam:1, pos:'centro' },
   carrito:[],
-  envio:{ cp:'1425', opcion:'sucursal', errCp:false },
+  envio:{ cp:'', opcion:null, errCp:false },
   pago:'tarjeta',
   pedido:null, pedidos:[],
   usuario:null, registrados:{},
@@ -657,16 +690,36 @@ const etqDisp = p => p.s ? '<span class="etq etq-stock">En stock</span>' : '<spa
 const imgTag = (src, alt, lazy) => src ? '<img class="foto" src="' + src + '" alt="' + esc(alt) + '"' + (lazy ? ' loading="lazy"' : '') + ' decoding="async">' : '';
 
 /* ---------- Búsqueda (sin tildes, plurales y raíces: "universidad" encuentra "universitario") ---------- */
-const SINONIMOS = { harry:['hogwarts','harry'], potter:['hogwarts','potter'], facu:['universi','facu'], facultad:['universi','facultad'], uni:['universi'], seleccion:['afa','argentina','seleccion'], hoodie:['capucha','hoodie','buzo'], hoodies:['capucha','hoodie','buzo'], gorro:['gorra'], gorros:['gorra'], buso:['buzo'], busos:['buzo'], crop:['crop','remera'], sueter:['buzo'], polerón:['buzo'] };
-function coincide(p, q){
-  const toks = fold(q).split(/[^a-z0-9ñ]+/).filter(t => t.length >= 2);
-  return toks.every(t => {
-    const c = [t].concat(SINONIMOS[t] || []);
-    if (t.length > 3 && /s$/.test(t)) c.push(t.slice(0, -1));
-    if (t.length > 3 && /es$/.test(t)) c.push(t.slice(0, -2));
-    if (t.length > 5) c.push(t.slice(0, Math.max(5, t.length - 3)));
-    return c.some(x => p.idx.indexOf(x) >= 0);
-  });
+const SINONIMOS = { marvel:['spiderman','marvel'], tom:['spiderman'], holland:['spiderman'], arana:['spiderman'], spider:['spiderman'], hombre:['spiderman','hombre'], river:['river'], millonario:['river'], boca:['boca'], futbol:['futbol','club','river','boca','afa'], club:['futbol','club'], hp:['hogwarts'], liviano:['rustic','liviano'], liviana:['rustic','liviana'], fresco:['rustic'], abrigado:['frisa','friza','frizado'], abrigada:['frisa','friza','frizado'], invierno:['frisa','friza','invierno'], harry:['hogwarts','harry'], potter:['hogwarts','potter'], facu:['universi','facu'], facultad:['universi','facultad'], uni:['universi'], seleccion:['afa','argentina','seleccion'], hoodie:['capucha','hoodie','buzo'], hoodies:['capucha','hoodie','buzo'], gorro:['gorra'], gorros:['gorra'], buso:['buzo'], busos:['buzo'], crop:['crop','remera'], sueter:['buzo'], polerón:['buzo'] };
+const VACIAS = new Set(['de','del','la','el','los','las','un','una','con','para','que','mi','por','en','y','o','a']);
+const GENERICAS = new Set(['buzo','buzos','hoodie','hoodies','remera','remeras','campera','camperas','gorra','gorras','prenda','ropa','diseno','disenos']);
+const tokens = q => fold(q).split(/[^a-z0-9ñ]+/).filter(t => t.length >= 2 && !VACIAS.has(t));
+/* distancia de edición con tope: "rovenclaw" encuentra "ravenclaw" */
+function cerca(a, b, max){
+  if (Math.abs(a.length - b.length) > max) return false;
+  let prev = Array.from({ length:b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++){
+    const cur = [i]; let menor = i;
+    for (let j = 1; j <= b.length; j++){ cur[j] = Math.min(prev[j] + 1, cur[j-1] + 1, prev[j-1] + (a[i-1] === b[j-1] ? 0 : 1)); if (cur[j] < menor) menor = cur[j]; }
+    if (menor > max) return false; prev = cur;
+  }
+  return prev[b.length] <= max;
+}
+function tokenEn(p, t){
+  const c = [t].concat(SINONIMOS[t] || []);
+  if (t.length > 3 && /s$/.test(t)) c.push(t.slice(0, -1));
+  if (t.length > 3 && /es$/.test(t)) c.push(t.slice(0, -2));
+  if (t.length > 5) c.push(t.slice(0, Math.max(5, t.length - 3)));
+  if (c.some(x => p.idx.indexOf(x) >= 0)) return true;
+  if (t.length < 4) return false;
+  const max = t.length >= 7 ? 2 : 1;
+  return p.pal.some(w => cerca(t, w, max));
+}
+function coincide(p, q){ const toks = tokens(q); return toks.every(t => tokenEn(p, t)); }
+/* si no hay coincidencia exacta, se ordena por cuántas palabras importantes coinciden */
+function parecidos(q, base){
+  const toks = tokens(q).filter(t => !GENERICAS.has(t)); if (!toks.length) return [];
+  return base.map(p => ({ p, n:toks.filter(t => tokenEn(p, t)).length })).filter(x => x.n > 0).sort((a, b) => b.n - a.n).map(x => x.p);
 }
 function pasa(p, f, conBusqueda){
   return (f.prenda === 'Todas' || p.pr === f.prenda) &&
@@ -677,9 +730,17 @@ function pasa(p, f, conBusqueda){
 }
 /* Cuántos diseños quedarían si elegís ese valor (las listas de prenda/temática/colección borran la búsqueda; los chips de stock la mantienen) */
 function cuenta(campo, valor){ const f = Object.assign({}, S.filtros); f[campo] = valor; return CAT.filter(p => pasa(p, f, campo === 'stock')).length; }
+let PARECIDOS = false;
 function filtrar(){
   const f = S.filtros;
   let r = CAT.filter(p => pasa(p, f, true));
+  PARECIDOS = false;
+  if (!r.length && f.q.trim()){ r = parecidos(f.q, CAT.filter(p => pasa(p, f, false))); PARECIDOS = r.length > 0; if (PARECIDOS) return r; }
+  /* con búsqueda, primero los que tienen las palabras en el nombre */
+  if (f.q.trim() && f.orden === ORDENES[0]){
+    const toks = tokens(f.q), nota = p => toks.filter(t => [t].concat(SINONIMOS[t] || []).some(x => p.nom.indexOf(x) >= 0)).length;
+    r = r.map((p, i) => ({ p, i, n:nota(p) })).sort((a, b) => b.n - a.n || a.i - b.i).map(x => x.p);
+  }
   if (f.orden === 'Menor precio') r = r.slice().sort((a, b) => a.p - b.p);
   else if (f.orden === 'Mayor precio') r = r.slice().sort((a, b) => b.p - a.p);
   else if (f.orden === 'Nombre A–Z') r = r.slice().sort((a, b) => a.n.localeCompare(b.n, 'es'));
@@ -732,7 +793,6 @@ function vInicio(){
         '<button class="ico-btn" type="button" data-action="hero-next" data-key="hnext" aria-label="Diapositiva siguiente">' + ICO.der + '</button>' +
         '<div class="puntos">' + puntos + '</div>' +
       '</div></section>' +
-    '<div class="titulo-fila"><h2>Hecho en Argentina</h2><a class="btn btn-secundario" href="#catalogo" data-go="catalogo">Explorar diseños</a></div>' +
     '<section class="campo" style="gap:20px" aria-labelledby="t-mente"><h2 id="t-mente">¿Qué tenés en mente?</h2><div class="cards-4">' + entradas + '</div></section>' +
     '<section class="campo" style="gap:20px" aria-labelledby="t-dest"><div class="titulo-fila"><h2 id="t-dest">Diseños destacados</h2><div style="display:flex;gap:10px">' +
       '<button class="ico-btn" type="button" data-action="dest-prev" aria-label="Ver diseños anteriores">' + ICO.izq + '</button>' +
@@ -756,7 +816,7 @@ function cardProducto(p){
   return '<article class="card"><div class="card-img" style="aspect-ratio:1/1">' + imgTag(foto(p, 0), '', true) + etqDisp(p) + '</div>' +
     '<div class="card-body"><h2 style="font-family:var(--texto);font-size:16px;font-weight:600;line-height:1.35">' + esc(p.n) + '</h2>' +
     '<span class="precio-grande">' + plata(p.p) + (p.pa > p.p ? '<span class="precio-antes"><span class="sr-only">Antes </span>' + plata(p.pa) + '</span>' : '') + '</span>' +
-    '<span class="precio-transf">' + plata(p.p * .85) + ' con transferencia</span><span class="cuotas">3 cuotas sin interés de ' + plata2(p.p / 3) + '</span>' + puntosColor(p) +
+    '<span class="precio-transf">' + plata(p.p * .85) + ' con transferencia</span>' + (p.tela ? '<span class="cuotas">' + esc(p.tela.n) + ' · ' + p.tela.peso.toLowerCase() + '</span>' : '') + puntosColor(p) +
     (p.ok ? '' : '<span class="estado-variante" style="color:var(--error)">Sin stock por ahora</span>') +
     '<a class="btn btn-secundario" style="margin-top:12px" href="#ficha" data-go="ficha" data-producto="' + p.id + '" aria-label="Elegir opciones de ' + esc(p.n) + '">Elegir opciones</a></div></article>';
 }
@@ -767,7 +827,7 @@ function vCatalogo(){
   const sugerencias = ['buzo','universidad','remera','gorra','campera','argentina','bad bunny','harry potter'].map(s => '<button class="chip" type="button" data-action="sugerir" data-v="' + s + '">' + s + '</button>').join('');
   return '<div class="vista">' +
     '<nav class="ruta" aria-label="Ruta"><a href="#inicio" data-go="inicio">Inicio</a><span aria-hidden="true">›</span><span aria-current="page">Diseños del catálogo</span></nav>' +
-    '<div class="cabecera"><h1 tabindex="-1" id="titulo-vista">' + (f.q ? 'Resultados para “' + esc(f.q) + '”' : 'Diseños del catálogo') + '</h1><p>' + CAT.length + ' diseños de la tienda. Los que dicen “A pedido” se bordan especialmente para vos.</p></div>' +
+    '<div class="cabecera"><h1 tabindex="-1" id="titulo-vista">' + (f.q ? 'Resultados para “' + esc(f.q) + '”' : 'Diseños del catálogo') + '</h1><p>' + (f.q ? '' : CAT.length + ' diseños. ') + 'Los que dicen “A pedido” se bordan especialmente para vos.</p></div>' +
     '<div class="campo" style="gap:18px">' +
       '<div class="filtros-grid">' +
         '<div class="campo"><label for="f-prenda">Prenda</label><select class="select" id="f-prenda" data-filtro="prenda">' + opciones(PRENDAS, f.prenda, 'prenda') + '</select></div>' +
@@ -780,6 +840,7 @@ function vCatalogo(){
     '<div class="titulo-fila"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px"><p id="resultados" aria-live="polite" style="font-weight:600">' + res.length + (res.length === 1 ? ' diseño' : ' diseños') + '</p>' +
       (f.q ? '<button class="busqueda-activa" type="button" data-action="quitar-busqueda" data-key="quitar-busqueda" aria-label="Quitar la búsqueda ' + esc(f.q) + '">Búsqueda: “' + esc(f.q) + '”<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></button>' : '') + '</div>' +
       (hayFiltro ? '<button class="link" type="button" data-action="limpiar" data-key="limpiar">Limpiar filtros y búsqueda</button>' : '') + '</div>' +
+    (PARECIDOS ? '<p class="aviso aviso-info">' + ICO.info + '<span>No encontramos exactamente “' + esc(f.q) + '”. Te mostramos los diseños más parecidos.</span></p>' : '') +
     (res.length ? '<div class="grilla">' + res.map(cardProducto).join('') + '</div>' :
       '<div class="vacio"><h2>No encontramos diseños' + (f.q ? ' para “' + esc(f.q) + '”' : ' con estos filtros') + '</h2><p class="cuotas">Probá con otra palabra o sacá algún filtro. También podés contarnos tu idea y la bordamos.</p><div class="chips" style="justify-content:center">' + sugerencias + '</div><div class="chips" style="justify-content:center"><button class="btn btn-secundario" type="button" data-action="limpiar">Ver todos los diseños</button><a class="btn btn-primario" href="#idea" data-go="idea">Contar mi idea</a></div></div>') +
   '</div>';
@@ -796,9 +857,9 @@ function renderOps(p, st, scope){
         '<button class="sw" type="button" data-action="op" data-scope="' + scope + '" data-k="' + k + '" data-j="' + j + '" data-key="' + id + '-' + j + '" aria-pressed="' + (elegido === j) + '" aria-label="' + esc(v) + (disp.has(j) ? '' : ', sin stock') + '" title="' + esc(v) + '"' + (disp.has(j) ? '' : ' disabled') + '><span style="background:' + fondoColor(v) + '"></span></button>').join('') + '</div>';
     } else if (o.v.length <= 12 && o.v.every(v => v.length <= 48)){
       ctrl = '<div class="chips-op" role="group" aria-labelledby="' + id + '-l">' + o.v.map((v, j) =>
-        '<button class="chip-op" type="button" data-action="op" data-scope="' + scope + '" data-k="' + k + '" data-j="' + j + '" data-key="' + id + '-' + j + '" aria-pressed="' + (elegido === j) + '"' + (disp.has(j) ? '' : ' disabled aria-label="' + esc(v) + ', sin stock"') + '>' + esc(v) + '</button>').join('') + '</div>';
+        '<button class="chip-op" type="button" data-action="op" data-scope="' + scope + '" data-k="' + k + '" data-j="' + j + '" data-key="' + id + '-' + j + '" aria-pressed="' + (elegido === j) + '"' + (disp.has(j) ? '' : ' disabled aria-label="' + esc(etqOp(v)) + ', sin stock"') + '>' + esc(etqOp(v)) + '</button>').join('') + '</div>';
     } else {
-      ctrl = '<select class="select" id="' + id + '-s" data-op-select="' + scope + '" data-k="' + k + '" aria-labelledby="' + id + '-l"' + (falta ? ' aria-invalid="true" aria-describedby="' + id + '-e"' : '') + '><option value="">Elegí una opción</option>' + o.v.map((v, j) => '<option value="' + j + '"' + (elegido === j ? ' selected' : '') + (disp.has(j) ? '' : ' disabled') + '>' + esc(v) + (disp.has(j) ? '' : ' (sin stock)') + '</option>').join('') + '</select>';
+      ctrl = '<select class="select" id="' + id + '-s" data-op-select="' + scope + '" data-k="' + k + '" aria-labelledby="' + id + '-l"' + (falta ? ' aria-invalid="true" aria-describedby="' + id + '-e"' : '') + '><option value="">Elegí una opción</option>' + o.v.map((v, j) => '<option value="' + j + '"' + (elegido === j ? ' selected' : '') + (disp.has(j) ? '' : ' disabled') + '>' + esc(etqOp(v)) + (disp.has(j) ? '' : ' (sin stock)') + '</option>').join('') + '</select>';
     }
     const lblExtra = (esOpColor(o) && elegido != null) ? ': <span style="font-weight:400">' + esc(o.v[elegido]) + '</span>' : '';
     return '<div class="campo grupo-op' + (falta && !ctrl.startsWith('<select') ? ' con-error' : '') + '">' +
@@ -817,8 +878,8 @@ function vFicha(){
   const F = S.ficha, p = prod(F.id) || P_INICIAL;
   const thumbs = p.f.slice(0, 8).map((x, i) => '<button class="mini" type="button" data-action="foto" data-v="' + i + '" data-key="foto-' + i + '" aria-pressed="' + (F.foto === i) + '" aria-label="Ver foto ' + (i+1) + ' de ' + p.f.length + '">' + imgTag(foto(p, i), '', true) + '</button>').join('');
   const principal = imgTag(foto(p, F.foto), p.n + ', foto ' + (F.foto + 1) + ' de ' + p.f.length);
-  const larga = p.d.length > 320;
-  const desc = p.d ? '<p class="desc-ficha" id="desc-ficha">' + esc(larga && !F.verMas ? p.d.slice(0, 320).replace(/\s+\S*$/, '') + '…' : p.d) + '</p>' + (larga ? '<button class="link" type="button" data-action="ver-mas" data-key="ver-mas" aria-expanded="' + !!F.verMas + '" aria-controls="desc-ficha">' + (F.verMas ? 'Ver menos' : 'Ver descripción completa') + '</button>' : '') : '';
+  const larga = p.d.length > 200;
+  const desc = p.d ? '<p class="desc-ficha" id="desc-ficha">' + esc(larga && !F.verMas ? p.d.slice(0, 200).replace(/\s+\S*$/, '') + '…' : p.d) + '</p>' + (larga ? '<button class="link" type="button" data-action="ver-mas" data-key="ver-mas" aria-expanded="' + !!F.verMas + '" aria-controls="desc-ficha">' + (F.verMas ? 'Ver menos' : 'Ver descripción completa') + '</button>' : '') : '';
   return '<div class="vista">' +
     '<nav class="ruta" aria-label="Ruta"><a href="#inicio" data-go="inicio">Inicio</a><span aria-hidden="true">›</span><a href="#catalogo" data-go="catalogo" data-mantener="1">Catálogo</a><span aria-hidden="true">›</span><span aria-current="page">' + esc(p.n) + '</span></nav>' +
     '<div class="dos-col">' +
@@ -828,11 +889,18 @@ function vFicha(){
         bloquePrecio(p, F.sel) +
         renderOps(p, F, 'ficha') +
         (p.o.some(o => /talle/i.test(o.l)) ? '' : '<button class="link" type="button" style="align-self:flex-start" data-action="guia" data-tipo="' + tipoGuia(p) + '" data-producto="' + p.id + '" aria-haspopup="dialog">Guía de talles</button>') +
+        (p.s ? '<p class="ayuda" style="margin:0">¿Lo querés con tu nombre u otro detalle bordado? Pedilo en <a class="link" href="#idea" data-go="idea" style="min-height:0">Tu idea propia</a>.</p>' :
+          '<div class="campo"><label for="f-extra" style="font-size:15px;font-weight:600">Agregá un detalle bordado <span style="font-weight:400;color:var(--gris)">(opcional)</span></label><input class="input" id="f-extra" data-campo="ficha-extra" maxlength="40" placeholder="Ej.: tu nombre en el puño" value="' + esc(F.extra || '') + '"><span class="ayuda">Antes de bordarlo te confirmamos si se puede y si tiene costo adicional.</span></div>') +
         '<div class="campo"><span class="lbl" id="lbl-cant" style="font-size:15px;font-weight:600">Cantidad</span><div class="cantidad" role="group" aria-labelledby="lbl-cant">' +
           '<button type="button" data-action="cant" data-v="-1" data-key="cant-menos" aria-label="Restar uno">' + ICO.menos + '</button><output aria-live="polite">' + F.cantidad + '</output><button type="button" data-action="cant" data-v="1" data-key="cant-mas" aria-label="Sumar uno">' + ICO.mas + '</button></div></div>' +
         '<form class="campo" data-form="cp-ficha" novalidate><label for="cp-ficha">Calculá el envío: código postal</label><div class="fila-boton"><input class="input" id="cp-ficha" inputmode="numeric" autocomplete="postal-code" placeholder="Ej.: 1425" maxlength="4" value="' + esc(F.cp) + '"' + (F.errCp ? ' aria-invalid="true" aria-describedby="err-cp-ficha"' : '') + '><button class="btn btn-secundario" type="submit" data-key="calc-ficha">Calcular</button></div>' +
           (F.errCp ? '<span class="msg-error" id="err-cp-ficha" role="alert">' + ICO.alerta + 'El código postal tiene 4 números, por ejemplo 1425</span>' : '') +
           (F.envio ? '<div class="opciones-envio" aria-live="polite"><span>Retiro en sucursal: <strong>' + plata(ENVIOS.sucursal.precio) + '</strong></span><span>Envío a domicilio: <strong>' + plata(ENVIOS.domicilio.precio) + '</strong></span></div>' : '<span class="ayuda">Sucursal o domicilio, con el costo aproximado</span>') + '</form>' +
+        '<dl class="info-prenda">' +
+          '<div><dt>' + ICO.reloj + 'Cuándo llega</dt><dd>' + plazoTexto(p) + ' El envío tarda ' + ENVIO_DIAS + ' según tu zona.</dd></div>' +
+          (p.tela ? '<div><dt>' + ICO.info + 'Tela</dt><dd><strong style="font-weight:600">' + esc(p.tela.n) + ':</strong> ' + esc(p.tela.d) + '</dd></div>' : '') +
+          '<div><dt>' + ICO.check + 'Cuidados</dt><dd>Lavar del revés con agua fría y sin lavandina. No usar secarropas. Planchar del revés, sin pasar sobre el bordado.</dd></div>' +
+        '</dl>' +
         '<button class="btn btn-primario btn-grande btn-bloque" type="button" data-action="agregar" data-key="agregar"' + (p.ok ? '' : ' disabled style="opacity:.55;cursor:not-allowed"') + '>' + (p.ok ? 'Agregar al carrito' : 'Sin stock por ahora') + '</button>' +
       '</div>' +
     '</div></div>';
@@ -982,6 +1050,10 @@ function vIdea(){
     '</div></div>';
 }
 
+function plazoCarrito(){
+  const pedido = S.carrito.some(it => it.tipo === 'personalizado' || it.pedido);
+  return (pedido ? 'las prendas a pedido se bordan en ' + PLAZO_PEDIDO + ' y después' : 'lo despachamos en 1 o 2 días hábiles y') + ' el envío tarda ' + ENVIO_DIAS + ' según tu zona.';
+}
 function totales(){
   const sub = S.carrito.reduce((a, it) => a + it.precio * it.cantidad, 0);
   const desc = S.pago === 'transferencia' ? sub * .15 : 0;
@@ -1011,6 +1083,7 @@ function vCarrito(){
         '<form class="campo" data-form="cp-carrito" novalidate><label for="cp-carrito">Código postal</label><div class="fila-boton"><input class="input" id="cp-carrito" inputmode="numeric" autocomplete="postal-code" maxlength="4" placeholder="Ej.: 1425" value="' + esc(S.envio.cp) + '"' + (S.envio.errCp ? ' aria-invalid="true" aria-describedby="err-cp-carrito"' : '') + '><button class="btn btn-secundario" type="submit" data-key="calc-carrito">Calcular</button></div>' +
           (S.envio.errCp ? '<span class="msg-error" id="err-cp-carrito" role="alert">' + ICO.alerta + 'El código postal tiene 4 números, por ejemplo 1425</span>' : '') + '</form>' +
         '<fieldset class="radios"><legend class="lbl">Forma de entrega</legend>' + radios + '</fieldset>' +
+        '<p class="aviso aviso-info">' + ICO.reloj + '<span><strong>Cuándo llega:</strong> ' + plazoCarrito() + '</span></p>' +
       '</div>' +
       '<aside class="resumen" aria-labelledby="t-resumen" style="flex:1 1 320px">' +
         '<h2 id="t-resumen" style="font-family:var(--texto);font-size:21px;font-weight:600">Resumen de compra</h2>' +
@@ -1031,7 +1104,7 @@ function vConfirmado(){
   return '<div class="vista" style="max-width:820px">' +
     '<div class="cabecera" style="gap:14px"><span class="etq etq-stock" style="align-self:flex-start">Pedido #' + P.numero + '</span><h1 tabindex="-1" id="titulo-vista">¡Listo! Recibimos tu pedido</h1><p>Pagaste con ' + (P.pago === 'transferencia' ? 'transferencia (15% OFF)' : 'tarjeta') + ' un total de <strong>' + plata(P.total) + '</strong>. ' + ENVIOS[P.envio].nombre + ', código postal ' + esc(P.cp) + '.</p></div>' +
     (P.pers ? pasos(3) + '<p class="aviso aviso-pend">' + ICO.reloj + '<span><strong>Ahora sigue la revisión del equipo.</strong> Te escribimos para aprobar el diseño antes de bordarlo.</span></p>' :
-      '<p class="aviso aviso-info">' + ICO.info + '<span>Te avisamos cuando tu pedido esté en camino.</span></p>') +
+      '<p class="aviso aviso-info">' + ICO.info + '<span>Te avisamos cuando tu pedido esté en camino. <strong>Cuándo llega:</strong> ' + (P.plazo || '') + '</span></p>') +
     '<div class="chips">' + (S.usuario ? '<a class="btn btn-primario" href="#cuenta" data-go="cuenta">Ver mis pedidos</a>' : '<a class="btn btn-primario" href="#inicio" data-go="inicio">Volver al inicio</a>') + '<a class="btn btn-secundario" href="#catalogo" data-go="catalogo">Seguir mirando diseños</a></div>' +
   '</div>';
 }
@@ -1060,6 +1133,13 @@ function vInstagram(){
   '</div>';
 }
 
+const FAQ = [
+  ['¿Cuánto tarda en llegar mi pedido?', 'Las prendas en stock se despachan en 1 o 2 días hábiles. Las prendas a pedido se bordan en hasta 2 semanas. Después, el envío tarda entre 3 y 7 días hábiles según tu zona.'],
+  ['¿Cómo cuido una prenda bordada?', 'Lavala del revés con agua fría y sin lavandina. No uses secarropas. Planchala del revés y sin pasar la plancha sobre el bordado.'],
+  ['¿Puedo agregar mi nombre u otro detalle bordado?', 'Sí, en las prendas a pedido. En la ficha del producto completá “Agregá un detalle bordado” (por ejemplo, tu nombre en el puño). Antes de bordarlo te confirmamos si se puede y si tiene costo adicional. Para prendas en stock o diseños nuevos, usá Tu idea propia.'],
+  ['¿Qué tela es más liviana?', 'El algodón rústico no tiene felpa y es más liviano, ideal para media estación. La frisa (frizado) tiene felpa por dentro y es más abrigada. Cada ficha indica qué tela tiene la prenda.'],
+  ['¿Cuál es la diferencia entre “En stock” y “A pedido”?', 'En stock son prendas ya hechas, listas para enviar. A pedido se bordan especialmente para vos después de la compra.']
+];
 const CASOS = [
   { t:'Mi pedido llegó con una falla o es incorrecto', nec:'N° de pedido, una descripción del problema y una foto.', sigue:'Revisamos tu caso y te escribimos para resolverlo.' },
   { t:'Quiero cambiar talle, color o producto', nec:'N° de pedido y qué querés cambiar.', sigue:'Te confirmamos si hay stock del talle o color que querés y cómo hacer el envío.' },
@@ -1069,7 +1149,9 @@ const CASOS = [
 function vCambios(){
   const K = S.cambios;
   return '<div class="vista">' +
-    '<div class="cabecera"><h1 tabindex="-1" id="titulo-vista">Cambios y devoluciones</h1><p>Elegí la situación que necesitás resolver.</p></div>' +
+    '<div class="cabecera"><h1 tabindex="-1" id="titulo-vista">Ayuda</h1><p>Respuestas rápidas y, si las necesitás, cambios y devoluciones.</p></div>' +
+    '<section class="campo" style="gap:14px" aria-labelledby="t-faq"><h2 id="t-faq">Preguntas frecuentes</h2><div class="faq">' + FAQ.map(q => '<details><summary>' + q[0] + '</summary><p>' + q[1] + '</p></details>').join('') + '</div></section>' +
+    '<h2>Cambios y devoluciones</h2><p style="margin-top:-12px;color:var(--gris)">Elegí la situación que necesitás resolver.</p>' +
     '<div class="acordeon">' + CASOS.map((c, i) => {
       const ab = K.abierto === i, e = K.err[i] || {};
       return '<div class="acc"><h2><button class="acc-btn" type="button" id="acc-b' + i + '" data-action="acc" data-i="' + i + '" data-key="acc' + i + '" aria-expanded="' + ab + '" aria-controls="acc-p' + i + '">' + c.t + (ab ? ICO.menos : ICO.mas) + '</button></h2>' +
@@ -1152,13 +1234,14 @@ function render(mantenerFoco){
 function nuevoFiltro(d){ return { prenda: d.prenda || 'Todas', tema: d.tematica || 'Todas', coleccion: d.coleccion || 'Todas', stock: d.stock || 'Todos', q: d.q || '', orden:'Destacados' }; }
 function ir(vista, datos, desdeHistorial){
   datos = datos || {};
+  const tb = $('#toasts'); if (tb) tb.innerHTML = '';
   /* Entrar al catálogo desde un menú arranca de cero (con el filtro de ese link, si tiene).
      Solo "volver" (miga de pan o botón Atrás del navegador) conserva la búsqueda y los filtros. */
   if (vista === 'catalogo' && !datos.mantener) S.filtros = nuevoFiltro(datos);
   $('#q').value = vista === 'catalogo' ? S.filtros.q : '';
   if (vista === 'ficha' && datos.producto){
     const p = prod(datos.producto);
-    if (p && p.id !== S.ficha.id) S.ficha = { id:p.id, sel:selInicial(p), cantidad:1, foto:0, err:false, sinStock:false, cp:S.ficha.cp, envio:S.ficha.envio, errCp:false };
+    if (p && p.id !== S.ficha.id) S.ficha = { id:p.id, sel:selInicial(p), cantidad:1, foto:0, err:false, sinStock:false, cp:S.ficha.cp, envio:S.ficha.envio, errCp:false, extra:'' };
   }
   if (vista === 'cambios') S.cambios.abierto = (datos.caso != null && datos.caso !== '') ? Number(datos.caso) : -1;
   if ((vista === 'login' || vista === 'registro') && S.usuario) vista = 'cuenta';
@@ -1190,13 +1273,14 @@ function actualizarHeader(){
 /* ---------- Avisos flotantes ---------- */
 function aviso(texto, accion, neutro){
   const box = $('#toasts');
+  box.innerHTML = '';
   const t = document.createElement('div');
   t.className = 'toast' + (neutro ? ' neutro' : '');
   t.innerHTML = (neutro ? '' : ICO.check) + '<span>' + texto + '</span>' + (accion ? '<button class="btn-toast" type="button">' + accion.texto + '</button>' : '') + '<button class="cerrar" type="button" aria-label="Cerrar aviso"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
   box.appendChild(t);
   const cerrar = () => t.remove();
   t.querySelector('.cerrar').addEventListener('click', cerrar);
-  if (accion) t.querySelector('.btn-toast').addEventListener('click', () => { cerrar(); ir(accion.go); });
+  if (accion) t.querySelector('.btn-toast').addEventListener('click', () => { cerrar(); if (accion.fn) accion.fn(); else ir(accion.go); });
   setTimeout(() => { if (!t.contains(document.activeElement)) cerrar(); else setTimeout(cerrar, 6000); }, 7000);
 }
 
@@ -1291,15 +1375,19 @@ const ACC = {
     if (falta >= 0){ F.err = true; render(false); const g = cont.querySelectorAll('.grupo-op')[falta]; const b = g && g.querySelector('button:not([disabled]), select'); if (b) b.focus(); return; }
     const v = variante(p, F.sel);
     if (!v || v[n+1] !== 1){ aviso('Esa combinación no tiene stock. Probá con otra opción.', null, true); return; }
-    S.carrito.push({ tipo:'producto', id:p.id, nombre:p.n, detalle:p.o.map((o, k) => o.l + ': ' + o.v[F.sel[k]]).join(' · '), cantidad:F.cantidad, precio:v[n], foto:foto(p, typeof F.foto === 'number' ? F.foto : 0) });
+    S.carrito.push({ tipo:'producto', id:p.id, nombre:p.n, detalle:p.o.map((o, k) => o.l + ': ' + etqOp(o.v[F.sel[k]])).join(' · ') + (F.extra && F.extra.trim() ? ' · Detalle bordado: ' + F.extra.trim() : ''), pedido:!p.s, cantidad:F.cantidad, precio:v[n], foto:foto(p, typeof F.foto === 'number' ? F.foto : 0) });
     actualizarHeader();
     aviso('<strong>Agregado al carrito.</strong> ' + esc(p.n), { texto:'Ver carrito', go:'carrito' });
   },
-  'quitar'(el){ const it = S.carrito.splice(Number(el.dataset.i), 1)[0]; render(false); $('#titulo-vista').focus(); aviso('Quitaste ' + esc(it.nombre) + ' del carrito.', null, true); },
+  'quitar'(el){
+    const i = Number(el.dataset.i), it = S.carrito.splice(i, 1)[0];
+    render(false); actualizarHeader(); $('#titulo-vista').focus();
+    aviso('Quitaste ' + esc(it.nombre) + ' del carrito.', { texto:'Deshacer', fn:() => { S.carrito.splice(i, 0, it); render(false); actualizarHeader(); aviso('Lo volvimos a agregar al carrito.', null, true); } }, true);
+  },
   'continuar'(){
     if (!/^\d{4}$/.test(S.envio.cp)){ S.envio.errCp = true; render(false); $('#cp-carrito').focus(); return; }
     const t = totales();
-    S.pedido = { numero: 1042 + Math.floor(Math.random() * 900), total:t.total, pago:S.pago, envio:S.envio.opcion || 'sucursal', cp:S.envio.cp, pers:S.carrito.some(it => it.tipo === 'personalizado'), cant:S.carrito.reduce((a, it) => a + it.cantidad, 0), fecha:new Date().toLocaleDateString('es-AR') };
+    S.pedido = { plazo:plazoCarrito(), numero: 1042 + Math.floor(Math.random() * 900), total:t.total, pago:S.pago, envio:S.envio.opcion || 'sucursal', cp:S.envio.cp, pers:S.carrito.some(it => it.tipo === 'personalizado'), cant:S.carrito.reduce((a, it) => a + it.cantidad, 0), fecha:new Date().toLocaleDateString('es-AR') };
     S.pedidos.unshift(S.pedido);
     S.carrito = [];
     ir('confirmado');
@@ -1350,6 +1438,7 @@ document.addEventListener('change', e => {
 document.addEventListener('input', e => {
   const el = e.target, c = el.dataset.campo;
   if (c === 'idea-texto') S.idea.texto = el.value;
+  if (c === 'ficha-extra') S.ficha.extra = el.value;
   else if (c === 'ig-link') S.ig.link = el.value;
   else if (c === 'ig-texto') S.ig.texto = el.value;
   else if (el.id === 'cp-ficha') S.ficha.cp = el.value.replace(/\D/g, '');
@@ -1373,7 +1462,7 @@ document.addEventListener('submit', e => {
     const sinRef = !I.archivo && I.texto.trim().length < 5;
     if (falta >= 0 || sinRef){ I.errOp = falta >= 0; I.err = sinRef; render(false); if (falta >= 0){ const g = cont.querySelectorAll('.grupo-op')[falta]; const b = g && g.querySelector('button:not([disabled]), select'); if (b) b.focus(); } else $('#i-texto').focus(); return; }
     const v = variante(p, I.sel);
-    S.carrito.push({ tipo:'personalizado', id:p.id, nombre:'Buzo personalizado', detalle:p.o.map((o, k) => o.l + ': ' + o.v[I.sel[k]]).join(' · ') + ' · Hilo: ' + HILOS[I.hilo].n, cantidad:1, precio:v ? v[n] : p.p, foto:miniPrevia() || foto(p, 0), archivo:I.archivo, url:I.url, texto:I.texto.trim() });
+    S.carrito.push({ tipo:'personalizado', id:p.id, nombre:'Buzo personalizado', detalle:p.o.map((o, k) => o.l + ': ' + etqOp(o.v[I.sel[k]])).join(' · ') + ' · Hilo: ' + HILOS[I.hilo].n, cantidad:1, precio:v ? v[n] : p.p, foto:miniPrevia() || foto(p, 0), archivo:I.archivo, url:I.url, texto:I.texto.trim() });
     S.idea = { sel:selInicial(p), archivo:null, url:null, texto:'', err:false, errOp:false, hilo:'original', tam:1, pos:'centro' };
     ir('carrito'); aviso('<strong>Agregamos tu personalizado al carrito.</strong>');
   } else if (tipo === 'ig'){
