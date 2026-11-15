@@ -885,7 +885,7 @@ function vFicha(){
   return '<div class="vista">' +
     '<nav class="ruta" aria-label="Ruta"><a href="#inicio" data-go="inicio">Inicio</a><span aria-hidden="true">›</span><a href="#catalogo" data-go="catalogo" data-mantener="1">Catálogo</a><span aria-hidden="true">›</span><span aria-current="page">' + esc(p.n) + '</span></nav>' +
     '<div class="dos-col">' +
-      '<div class="galeria"><div class="foto-principal">' + principal + (F.sinFoto ? '<p class="sin-foto" role="status">' + ICO.info + '<span>Todavía no tenemos foto de la versión <strong>' + esc(F.sinFoto) + '</strong>. La foto muestra otro color.</span></p>' : '') + '</div><div class="miniaturas" role="group" aria-label="Fotos del producto">' + thumbs + '</div></div>' +
+      '<div class="galeria"><div class="foto-principal">' + principal + (/^edit-/.test(p.f[F.foto] || '') ? '<p class="sin-foto">' + ICO.info + '<span>Foto retocada para mostrar este color.</span></p>' : '') + (F.sinFoto ? '<p class="sin-foto" role="status">' + ICO.info + '<span>Todavía no tenemos foto de la versión <strong>' + esc(F.sinFoto) + '</strong>. La foto muestra otro color.</span></p>' : '') + '</div><div class="miniaturas" role="group" aria-label="Fotos del producto">' + thumbs + '</div></div>' +
       '<div class="panel-compra">' +
         '<div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">' + etqDisp(p) + '<h1 tabindex="-1" id="titulo-vista">' + esc(p.n) + '</h1>' + desc + '</div>' +
         bloquePrecio(p, F.sel) +
@@ -1316,9 +1316,12 @@ const FOTO_VAR = [
   ['casas-hp-', 'Casa de Hogwarts', { 'Gryffindor':'img_1778', 'Slytherin':'img_9405', 'Hufflepuff':'img_1571', 'Ravenclaw':'img_1482' }],
   ['casas-de-hogwarts', 'Casa de Hogwarts', { 'Gryffindor':'301851ef', 'Slytherin':'3d77841f', 'Hufflepuff':'img_1571', 'Ravenclaw':'img_1482' }],
   /* null = la tienda no tiene foto real de esa variante: se avisa en vez de inventarla */
-  ['hoodie-spiderman', 'Color', { 'Rojo (hilo negro)':'5-', 'Rojo con recorte azul marino (hilo negro)':'4-', 'Rojo con recorte azul francia (hilo negro)':'3-', 'Negro (hilo rojo)':null }],
-  ['campera-spiderman', 'Color', { 'Rojo (hilo negro)':'image00001', 'Negro (hilo rojo)':null }]
+  ['hoodie-spiderman', 'Color', { 'Rojo (hilo negro)':'5-', 'Rojo con recorte azul marino (hilo negro)':'4-', 'Rojo con recorte azul francia (hilo negro)':'3-', 'Negro (hilo rojo)':'edit-hoodie' }],
+  ['campera-spiderman', 'Color', { 'Rojo (hilo negro)':'image00001', 'Negro (hilo rojo)':'edit-campera' }]
 ];
+(function(){ // versión negra de Spiderman: foto real retocada (la tienda no tiene foto de ese color)
+  [['hoodie-spiderman', 'edit-hoodie-spiderman-negro.webp'], ['campera-spiderman', 'edit-campera-spiderman-negro.webp']].forEach(x => { const p = CAT.find(p => p.id.indexOf(x[0]) === 0); if (p && p.f.indexOf(x[1]) < 0) p.f.push(x[1]); });
+})();
 (function(){ // la ficha "a pedido" de Hogwarts no tiene foto suelta de dos casas: se suman las de la versión en stock
   const ap = CAT.find(p => p.id.indexOf('casas-de-hogwarts') === 0), st = CAT.find(p => p.id.indexOf('casas-hp-frizados') === 0);
   if (ap && st) st.f.forEach(f => { if (/^img_(1571|1482)/.test(f) && ap.f.indexOf(f) < 0) ap.f.push(f); });
