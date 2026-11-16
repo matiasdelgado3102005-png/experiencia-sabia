@@ -1209,7 +1209,14 @@ function cargar3D(){
     const pm = new T.PMREMGenerator(r); sc.environment = pm.fromScene(new E.RoomEnvironment(), .04).texture; sc.environmentIntensity = .55;
     const dl = new T.DirectionalLight(0xffffff, 2.2); dl.position.set(-1.2, 1.1, 1.4); sc.add(dl);
     const cam = new T.PerspectiveCamera(30, 1, .01, 20);
-    const g = await new L.GLTFLoader().loadAsync(IMGP('hoodie-3d.glb'));
+    let g;
+    try { g = await new L.GLTFLoader().loadAsync(IMGP('hoodie-3d.glb')); }
+    catch(e){ /* donde no se puede servir .glb, el modelo viaja dentro de un .js */
+      await new Promise((ok, mal) => { const sc2 = document.createElement('script'); sc2.src = IMGP('hoodie-3d.js'); sc2.onload = ok; sc2.onerror = mal; document.head.appendChild(sc2); });
+      const b64 = window.HOODIE_3D, bin = new Uint8Array(b64.length * 3 / 4 - (b64.endsWith('==') ? 2 : b64.endsWith('=') ? 1 : 0)), raw = atob(b64);
+      for (let i = 0; i < bin.length; i++) bin[i] = raw.charCodeAt(i);
+      g = await new L.GLTFLoader().parseAsync(bin.buffer, ''); window.HOODIE_3D = null;
+    }
     const m = g.scene, box = new T.Box3().setFromObject(m), c = box.getCenter(new T.Vector3());
     const raiz = new T.Group(); raiz.add(m); m.position.sub(c); sc.add(raiz);
     const tela = [], cuerpo = [];
