@@ -275,6 +275,35 @@ main{display:block;padding-block:28px 72px}
 .faq details p{margin:0 0 18px;color:var(--gris)}
 @media (max-width:600px){.toast{font-size:14px;padding:8px 8px 8px 14px;border-radius:14px}.toast .btn-toast{min-height:40px}.toasts{bottom:calc(10px + env(safe-area-inset-bottom, 0px))}}
 .acc-panel .bloque{display:flex;flex-direction:column;gap:4px}
+/* Autocompletado del buscador */
+.buscador{position:relative}
+.sugs{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:60;margin:0;padding:8px;list-style:none;background:var(--blanco);border-radius:16px;box-shadow:0 0 0 1px var(--divisor),0 12px 32px rgba(0,0,0,.16);max-height:min(70vh,520px);overflow:auto}
+.sugs[hidden]{display:none}
+.sugs li{display:flex;align-items:center;gap:12px;min-height:48px;padding:6px 10px;border-radius:10px;cursor:pointer;font-size:15px}
+.sugs li[aria-selected="true"],.sugs li:hover{background:var(--crema)}
+.sugs .s-img{width:44px;height:44px;border-radius:8px;overflow:hidden;flex:none;background:var(--crema)}
+.sugs .s-img img{width:100%;height:100%;object-fit:cover}
+.sugs .s-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+.sugs .s-txt span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sugs .s-txt small{color:var(--gris);font-size:13px}
+.sugs mark{background:none;color:inherit;font-weight:700}
+.sugs .s-sep{min-height:0;padding:8px 10px 4px;font-size:13px;color:var(--gris);cursor:default;background:none!important}
+.sugs .s-todos{color:var(--azul);font-weight:600}
+.sugs .s-corr{color:var(--azul)}
+/* Ficha: bloques colapsables */
+.acordeon-ficha{display:flex;flex-direction:column;gap:10px}
+.acordeon-ficha .acc>h2{margin:0}
+.acordeon-ficha .acc-btn{min-height:56px;font-size:16px}
+.acordeon-ficha .acc-panel{font-size:15px;gap:12px}
+.acordeon-ficha .acc-panel p{margin:0}
+.cuidados{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:0;padding:0;list-style:none}
+.cuidados li{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;font-size:13px;padding:10px 6px;border-radius:12px;background:var(--crema)}
+.cuidados svg{width:34px;height:34px}
+.envio-res{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:14px;background:var(--crema);font-size:15px}
+.envio-res .op{display:flex;flex-direction:column;gap:2px}
+.envio-res .op strong{font-weight:600}
+.envio-res .op span{color:var(--gris)}
+.btn-falta{font-size:14px;color:var(--gris);margin:-12px 0 0;text-align:center}
 
 /* Footer */
 .footer{background:var(--crema);border-top:1px solid var(--divisor);padding-block:48px 28px;font-size:15px}
@@ -405,10 +434,11 @@ body:has(.modal[open]){overflow:hidden}
     <a class="logo" href="#inicio" data-go="inicio" aria-label="Experiencia Sabía, ir al inicio"><small>EXPERIENCIA</small><span>SABIA</span></a>
     <form class="buscador" role="search" id="form-buscar">
       <label for="q" class="sr-only">Buscar un diseño</label>
-      <input id="q" name="q" type="search" placeholder="Buscar un diseño…" autocomplete="off">
+      <input id="q" name="q" type="search" placeholder="Buscar un diseño…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sugs">
       <button type="submit" aria-label="Buscar">
         <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
       </button>
+      <ul class="sugs" id="sugs" role="listbox" aria-label="Sugerencias de búsqueda" hidden></ul>
     </form>
     <div class="util-wrap">
       <a class="util" href="#login" data-action="cuenta" id="btn-cuenta" aria-label="Mi cuenta">
@@ -547,11 +577,26 @@ function etqOp(v){
 
 /* ---------- Catálogo real (113 productos de la tienda) ---------- */
 const CAT = JSON.parse(document.getElementById('catalogo').textContent);
+/* Etiquetas ocultas: palabras relacionadas que no están en el nombre ("zendaya" lleva al buzo de Spiderman) */
+const ETIQUETAS = [
+  [/spider/, 'spiderman', 'tom holland zendaya peter parker hombre arana marvel miles morales'],
+  [/hogwarts|harry|potter/, 'hogwarts', 'harry potter hermione weasley gryffindor slytherin hufflepuff ravenclaw magia mago'],
+  [/river/, 'river', 'millonarios millonario gallardo monumental'],
+  [/boca/, 'boca', 'xeneize bombonera riquelme'],
+  [/\bafa\b|seleccion|scaloneta/, 'afa', 'messi scaloneta seleccion campeones mundial qatar'],
+  [/\bbts\b/, 'bts', 'kpop army jungkook jimin'],
+  [/redondos|ricota/, 'redondos', 'indio solari ricoteros patricio rey']
+];
+const TAG_MAIN = {};
+ETIQUETAS.forEach(e => e[2].split(' ').forEach(w => { TAG_MAIN[w] = e[1]; }));
 CAT.forEach((p, i) => {
   p.orden = i;
   p.idx = fold([p.n, p.pr, p.t.join(' '), p.c.join(' '), p.s ? 'en stock listo para enviar' : 'a pedido', p.o.map(o => o.l + ' ' + o.v.join(' ')).join(' '), p.d].join(' '));
   p.nom = fold(p.n);
   p.pal = Array.from(new Set(fold([p.n, p.t.join(' '), p.c.join(' '), p.o.map(o => o.v.join(' ')).join(' ')].join(' ')).split(/[^a-z0-9ñ]+/).filter(w => w.length >= 4)));
+  const base = fold(p.n + ' ' + p.c.join(' ') + ' ' + p.t.join(' '));
+  p.tags = ETIQUETAS.filter(e => e[0].test(base)).map(e => e[2]).join(' ');
+  if (p.tags){ p.idx += ' ' + p.tags; p.pal = Array.from(new Set(p.pal.concat(p.tags.split(' ').filter(w => w.length >= 4)))); }
   p.tela = telaDe(p); p.espera = (p.d.match(/tiempo de espera:?\s*(\d+)\s*d[ií]as/i) || [])[1];
 });
 const prod = id => CAT.find(p => p.id === id);
@@ -564,6 +609,26 @@ const ORDENES = ['Destacados','Menor precio','Mayor precio','Nombre A–Z'];
 const P_PERS = CAT.find(p => p.id.indexOf('buzo-personalizado') === 0) || CAT[0];
 const P_INICIAL = porNombre('Buzo AFA (a pedido)') || CAT[0];
 const ENVIOS = { sucursal:{ nombre:'Retiro en sucursal', precio:6500 }, domicilio:{ nombre:'Envío a domicilio', precio:8046 } };
+/* Días hábiles de viaje según la zona del código postal */
+function zonaCP(cp){
+  const n = Number(cp);
+  if (n >= 1000 && n <= 1499) return { nombre:'CABA', suc:[2,3], dom:[2,4] };
+  if (n >= 1500 && n <= 1999) return { nombre:'Gran Buenos Aires', suc:[3,4], dom:[3,5] };
+  return { nombre:'Interior del país', suc:[4,6], dom:[5,8] };
+}
+function sumarHabiles(d, n){ const x = new Date(d); while (n > 0){ x.setDate(x.getDate() + 1); if (x.getDay() !== 0 && x.getDay() !== 6) n--; } return x; }
+const fechaCorta = d => d.toLocaleDateString('es-AR', { weekday:'short', day:'numeric', month:'short' }).replace(/[.,]/g, '');
+function llegada(p, rango){
+  const prep = p.s ? [1,2] : [10, Math.max(10, Math.ceil((Number(p.espera) || 14) * 5 / 7))], hoy = new Date();
+  return 'llega entre el ' + fechaCorta(sumarHabiles(hoy, prep[0] + rango[0])) + ' y el ' + fechaCorta(sumarHabiles(hoy, prep[1] + rango[1]));
+}
+function htmlEnvio(p, cp){
+  const z = zonaCP(cp);
+  return '<div class="envio-res" aria-live="polite"><span style="font-size:14px;color:var(--gris)">Código postal ' + esc(cp) + ' · ' + z.nombre + '</span>' +
+    '<div class="op"><strong>Retiro en sucursal · ' + plata(ENVIOS.sucursal.precio) + '</strong><span>Viaja ' + z.suc[0] + ' a ' + z.suc[1] + ' días hábiles: ' + llegada(p, z.suc) + '</span></div>' +
+    '<div class="op"><strong>Envío a domicilio · ' + plata(ENVIOS.domicilio.precio) + '</strong><span>Viaja ' + z.dom[0] + ' a ' + z.dom[1] + ' días hábiles: ' + llegada(p, z.dom) + '</span></div>' +
+    '<span style="font-size:14px;color:var(--gris)">' + (p.s ? 'Incluye 1 o 2 días hábiles de despacho.' : 'Incluye el tiempo de bordado a pedido (' + (p.espera ? p.espera + ' días' : PLAZO_PEDIDO) + ').') + '</span></div>';
+}
 
 /* Colores de prenda → muestra */
 const MAPA_COLOR = [['celeste bandera','#75AADB'],['celeste pastel','#C7DFF2'],['azul francia','#2F5DA8'],['azul marino','#263552'],['azul gastado','#5B7391'],['azul petroleo','#1E4A5A'],['gris melange','#B8BCC2'],['gris oscuro','#4A4F57'],['gris gastado','#8E9196'],['verde ingles','#1F4D3A'],['bordo gastado','#7E3B46'],['camel gastado','#B58B5E'],['cremita','#EFE3CC'],['beige','#DCCBB0'],['blanco','#FFFFFF'],['negro','#22252B'],['lila','#C9B6E4'],['celeste','#A9CDEB'],['frambuesa','#C2185B'],['rojo','#C62828'],['bordo','#6D1A2A'],['rosa','#F4B6C8'],['verde','#3E8E5A'],['marron','#7A5236'],['amarill','#F2C230'],['azul','#2F5DA8'],['dorado','#C9A227'],['plateado','#B9BEC4']];
@@ -733,16 +798,68 @@ function pasa(p, f, conBusqueda){
 /* Cuántos diseños quedarían si elegís ese valor (las listas de prenda/temática/colección borran la búsqueda; los chips de stock la mantienen) */
 function cuenta(campo, valor){ const f = Object.assign({}, S.filtros); f[campo] = valor; return CAT.filter(p => pasa(p, f, campo === 'stock')).length; }
 let PARECIDOS = false;
+function rankNombre(lista, q){
+  const toks = tokens(q), nota = p => toks.filter(t => [t].concat(SINONIMOS[t] || [], TAG_MAIN[t] ? [TAG_MAIN[t]] : []).some(x => p.nom.indexOf(x) >= 0)).length;
+  return lista.map((p, i) => ({ p, i, n:nota(p) })).sort((a, b) => b.n - a.n || a.i - b.i).map(x => x.p);
+}
+/* "¿Quisiste decir…?": cambia cada palabra que no aparece en ningún producto por la más parecida del catálogo */
+let VOCAB = null;
+function corregir(q){
+  if (!VOCAB) VOCAB = Array.from(new Set(CAT.reduce((a, p) => a.concat(p.pal), []))).filter(w => w.length >= 4 && !/\d/.test(w));
+  let cambio = false;
+  const out = tokens(q).map(t => {
+    if (t.length < 4 || CAT.some(p => p.idx.indexOf(t) >= 0) || SINONIMOS[t]) return t;
+    let mejor = null, dist = 3;
+    VOCAB.forEach(w => { for (let d = 1; d < dist; d++){ if (cerca(t, w, d)){ mejor = w; dist = d; break; } } });
+    if (mejor){ cambio = true; return mejor; }
+    return t;
+  });
+  return cambio ? out.join(' ') : null;
+}
+const SUG = { items:[], activo:-1 };
+function marcar(texto, q){
+  const toks = tokens(q).filter(t => t.length >= 2); let h = esc(texto);
+  toks.forEach(t => { const i = fold(texto).indexOf(t); if (i >= 0){ const orig = texto.substr(i, t.length); h = h.replace(esc(orig), '<mark>' + esc(orig) + '</mark>'); } });
+  return h;
+}
+function actualizarSugs(){
+  const q = $('#q').value.trim(), ul = $('#sugs');
+  SUG.items = []; SUG.activo = -1;
+  if (q.length < 2){ cerrarSugs(); return; }
+  let res = rankNombre(CAT.filter(p => coincide(p, q)), q), corr = corregir(q);
+  if (!res.length && corr) res = rankNombre(CAT.filter(p => coincide(p, corr)), corr);
+  if (!res.length) res = parecidos(q, CAT);
+  /* sinónimos y etiquetas: "Relacionado con spiderman" */
+  const rel = Array.from(new Set(tokens(q).map(t => TAG_MAIN[t] || (SINONIMOS[t] || [])[0]).filter(x => x && fold(q).indexOf(x) < 0)));
+  if (corr) SUG.items.push({ tipo:'corr', v:corr, html:'<span>¿Quisiste decir <strong>' + esc(corr) + '</strong>?</span>' });
+  rel.forEach(r => SUG.items.push({ tipo:'rel', v:r, html:'<span>Relacionado: <strong>' + esc(r) + '</strong></span>' }));
+  res.slice(0, 5).forEach(p => SUG.items.push({ tipo:'prod', v:p.id, html:'<span class="s-img">' + imgTag(foto(p, 0), '', true) + '</span><span class="s-txt"><span>' + marcar(p.n, corr || q) + '</span><small>' + plata(p.p) + ' · ' + (p.s ? 'En stock' : 'A pedido') + '</small></span>' }));
+  SUG.items.push({ tipo:'todos', v:corr || q, html:res.length ? 'Ver ' + (res.length === 1 ? 'el resultado' : 'los ' + res.length + ' resultados') + ' de “' + esc(corr || q) + '”' : 'Buscar “' + esc(q) + '” en el catálogo' });
+  ul.innerHTML = SUG.items.map((it, i) => (it.tipo === 'prod' && (i === 0 || SUG.items[i-1].tipo !== 'prod') ? '<li class="s-sep" role="presentation">Diseños</li>' : '') +
+    '<li role="option" id="sug-' + i + '" data-sug="' + i + '" aria-selected="false" class="s-' + it.tipo + '">' + it.html + '</li>').join('');
+  ul.hidden = false; $('#q').setAttribute('aria-expanded', 'true'); $('#q').removeAttribute('aria-activedescendant');
+}
+function cerrarSugs(){ const ul = $('#sugs'); if (!ul) return; ul.hidden = true; ul.innerHTML = ''; SUG.activo = -1; $('#q').setAttribute('aria-expanded', 'false'); $('#q').removeAttribute('aria-activedescendant'); }
+function moverSug(d){
+  if ($('#sugs').hidden || !SUG.items.length) return;
+  const n = SUG.items.length; let a = SUG.activo + d; if (a >= n) a = -1; if (a < -1) a = n - 1; SUG.activo = a;
+  document.querySelectorAll('#sugs [role=option]').forEach(li => li.setAttribute('aria-selected', String(Number(li.dataset.sug) === SUG.activo)));
+  const li = $('#sug-' + SUG.activo);
+  if (li){ $('#q').setAttribute('aria-activedescendant', li.id); li.scrollIntoView({ block:'nearest' }); } else $('#q').removeAttribute('aria-activedescendant');
+}
+function elegirSug(i){
+  const it = SUG.items[i]; if (!it) return;
+  if (it.tipo === 'prod'){ cerrarSugs(); ir('ficha', { producto:it.v }); return; }
+  if (it.tipo === 'corr' || it.tipo === 'rel'){ $('#q').value = it.v; $('#q').focus(); actualizarSugs(); return; }
+  cerrarSugs(); ir('catalogo', { q:it.v });
+}
 function filtrar(){
   const f = S.filtros;
   let r = CAT.filter(p => pasa(p, f, true));
   PARECIDOS = false;
   if (!r.length && f.q.trim()){ r = parecidos(f.q, CAT.filter(p => pasa(p, f, false))); PARECIDOS = r.length > 0; if (PARECIDOS) return r; }
   /* con búsqueda, primero los que tienen las palabras en el nombre */
-  if (f.q.trim() && f.orden === ORDENES[0]){
-    const toks = tokens(f.q), nota = p => toks.filter(t => [t].concat(SINONIMOS[t] || []).some(x => p.nom.indexOf(x) >= 0)).length;
-    r = r.map((p, i) => ({ p, i, n:nota(p) })).sort((a, b) => b.n - a.n || a.i - b.i).map(x => x.p);
-  }
+  if (f.q.trim() && f.orden === ORDENES[0]) r = rankNombre(r, f.q);
   if (f.orden === 'Menor precio') r = r.slice().sort((a, b) => a.p - b.p);
   else if (f.orden === 'Mayor precio') r = r.slice().sort((a, b) => b.p - a.p);
   else if (f.orden === 'Nombre A–Z') r = r.slice().sort((a, b) => a.n.localeCompare(b.n, 'es'));
@@ -876,12 +993,42 @@ function bloquePrecio(p, sel){
   const r = precioDesde(p, sel);
   return '<div class="precios"><span class="precio-grande">' + (r.min !== r.max ? 'Desde ' : '') + plata(r.min) + (p.pa > r.min ? '<span class="precio-antes"><span class="sr-only">Antes </span>' + plata(p.pa) + '</span>' : '') + '</span><span class="precio-transf">' + plata(r.min * .85) + ' con transferencia</span><span class="cuotas">3 cuotas sin interés de ' + plata2(r.min / 3) + '</span></div>';
 }
+const LAVADO = [
+  ['Lavar a máx. 30 °C', '<path d="M6 12h24l-3 14H9z"/><path d="M5 12c2-2 4-2 6 0s4 2 6 0 4-2 6 0 4 2 6 0"/><text x="18" y="23" font-size="7" text-anchor="middle" fill="currentColor" stroke="none" font-weight="700">30</text>'],
+  ['No usar lavandina', '<path d="M18 7L31 29H5z"/><path d="M8 9l20 20M28 9L8 29"/>'],
+  ['No usar secarropas', '<rect x="6" y="6" width="24" height="24" rx="2"/><circle cx="18" cy="18" r="8"/><path d="M5 5l26 26M31 5L5 31"/>'],
+  ['Planchar tibio y del revés', '<path d="M7 25h22l-2-9c-1-3-3-4-6-4H12"/><path d="M7 25c0-5 3-9 9-9h12"/><circle cx="18" cy="21" r="1.2" fill="currentColor"/>'],
+  ['No limpiar en seco', '<circle cx="18" cy="18" r="11"/><path d="M8 8l20 20M28 8L8 28"/>']
+];
+function epoca(p){
+  if (p.pr === 'Gorras') return 'Todo el año.';
+  if (!p.tela) return null;
+  return { 'Abrigada':'Otoño e invierno: es la opción para los días fríos.', 'Liviana':/rústico/.test(p.tela.n) ? 'Media estación: otoño, primavera y noches de verano.' : 'Primavera y verano.' }[p.tela.peso];
+}
+function acordeonFicha(p, F){
+  const ab = F.acc || {}, g = GUIA[tipoGuia(p)], propias = medidasPropias(p), ep = epoca(p);
+  const panel = (i, titulo, cuerpo) => '<div class="acc"><h2><button class="acc-btn" type="button" id="accf-b' + i + '" data-action="acc-ficha" data-i="' + i + '" data-key="accf' + i + '" aria-expanded="' + !!ab[i] + '" aria-controls="accf-p' + i + '">' + titulo + (ab[i] ? ICO.menos : ICO.mas) + '</button></h2>' +
+    '<div class="acc-panel" id="accf-p' + i + '" role="region" aria-labelledby="accf-b' + i + '"' + (ab[i] ? '' : ' hidden') + '>' + cuerpo + '</div></div>';
+  const descM = (p.d ? '<p style="white-space:pre-line">' + esc(p.d) + '</p>' : '') +
+    (p.tela ? '<div class="bloque"><strong style="font-weight:600">Tela: ' + esc(p.tela.n) + '</strong><span>' + esc(p.tela.d) + '</span></div>' : '') +
+    (ep ? '<div class="bloque"><strong style="font-weight:600">Para qué época</strong><span>' + ep + '</span></div>' : '');
+  const cuid = '<ul class="cuidados">' + LAVADO.map(l => '<li><svg aria-hidden="true" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + l[1] + '</svg>' + l[0] + '</li>').join('') + '</ul>' +
+    '<div class="bloque"><strong style="font-weight:600">Para que el bordado dure</strong><span>Lavá la prenda del revés y sin frotar ni retorcer el bordado. Secala a la sombra, estirada. Si la planchás, hacelo del revés y sin apoyar la plancha directo sobre el bordado.</span></div>';
+  const guia = (propias.length ? '<div class="bloque"><strong style="font-weight:600">Medidas de este diseño</strong><span>' + propias.map(esc).join('<br>') + '</span></div>' : '') +
+    g.tablas.map(t => '<div class="tabla-wrap"><table class="tabla"><caption>' + t.t + '</caption><thead><tr>' + t.cols.map(c => '<th scope="col">' + c + '</th>').join('') + '</tr></thead><tbody>' +
+      t.filas.map(f => '<tr>' + f.map((v, i) => i === t.cols.indexOf('Talle') ? '<th scope="row">' + v + '</th>' : '<td>' + (typeof v === 'number' ? v + ' cm' : v) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>').join('') +
+    '<button class="link" type="button" style="align-self:flex-start" data-action="guia" data-tipo="' + tipoGuia(p) + '" data-producto="' + p.id + '" aria-haspopup="dialog">Ver cómo medir, con dibujo</button>';
+  return '<div class="acordeon-ficha">' + panel(0, 'Descripción y materiales', descM || '<p>Sin descripción.</p>') + panel(1, 'Cuidados de la prenda', cuid) + panel(2, 'Guía de talles', guia) + '</div>';
+}
 function vFicha(){
   const F = S.ficha, p = prod(F.id) || P_INICIAL;
   const thumbs = p.f.slice(0, 8).map((x, i) => '<button class="mini" type="button" data-action="foto" data-v="' + i + '" data-key="foto-' + i + '" aria-pressed="' + (F.foto === i) + '" aria-label="Ver foto ' + (i+1) + ' de ' + p.f.length + '">' + imgTag(foto(p, i), '', true) + '</button>').join('');
   const principal = imgTag(foto(p, F.foto), p.n + ', foto ' + (F.foto + 1) + ' de ' + p.f.length);
-  const larga = p.d.length > 200;
-  const desc = p.d ? '<p class="desc-ficha" id="desc-ficha">' + esc(larga && !F.verMas ? p.d.slice(0, 200).replace(/\s+\S*$/, '') + '…' : p.d) + '</p>' + (larga ? '<button class="link" type="button" data-action="ver-mas" data-key="ver-mas" aria-expanded="' + !!F.verMas + '" aria-controls="desc-ficha">' + (F.verMas ? 'Ver menos' : 'Ver descripción completa') + '</button>' : '') : '';
+  const desc = '';
+  const faltan = p.o.filter((o, k) => F.sel[k] == null).map(o => o.l.toLowerCase());
+  const vSel = faltan.length ? null : variante(p, F.sel), sinCombo = vSel && vSel[p.o.length+1] !== 1;
+  const puede = p.ok && !faltan.length && !sinCombo;
+  const txtBtn = !p.ok ? 'Sin stock por ahora' : faltan.length ? 'Seleccioná las opciones' : sinCombo ? 'Sin stock en esta combinación' : 'Agregar al carrito';
   return '<div class="vista">' +
     '<nav class="ruta" aria-label="Ruta"><a href="#inicio" data-go="inicio">Inicio</a><span aria-hidden="true">›</span><a href="#catalogo" data-go="catalogo" data-mantener="1">Catálogo</a><span aria-hidden="true">›</span><span aria-current="page">' + esc(p.n) + '</span></nav>' +
     '<div class="dos-col">' +
@@ -895,15 +1042,15 @@ function vFicha(){
           '<div class="campo"><label for="f-extra" style="font-size:15px;font-weight:600">Agregá un detalle bordado <span style="font-weight:400;color:var(--gris)">(opcional)</span></label><input class="input" id="f-extra" data-campo="ficha-extra" maxlength="40" placeholder="Ej.: tu nombre en el puño" value="' + esc(F.extra || '') + '"><span class="ayuda">Antes de bordarlo te confirmamos si se puede y si tiene costo adicional.</span></div>') +
         '<div class="campo"><span class="lbl" id="lbl-cant" style="font-size:15px;font-weight:600">Cantidad</span><div class="cantidad" role="group" aria-labelledby="lbl-cant">' +
           '<button type="button" data-action="cant" data-v="-1" data-key="cant-menos" aria-label="Restar uno">' + ICO.menos + '</button><output aria-live="polite">' + F.cantidad + '</output><button type="button" data-action="cant" data-v="1" data-key="cant-mas" aria-label="Sumar uno">' + ICO.mas + '</button></div></div>' +
-        '<form class="campo" data-form="cp-ficha" novalidate><label for="cp-ficha">Calculá el envío: código postal</label><div class="fila-boton"><input class="input" id="cp-ficha" inputmode="numeric" autocomplete="postal-code" placeholder="Ej.: 1425" maxlength="4" value="' + esc(F.cp) + '"' + (F.errCp ? ' aria-invalid="true" aria-describedby="err-cp-ficha"' : '') + '><button class="btn btn-secundario" type="submit" data-key="calc-ficha">Calcular</button></div>' +
+        '<form class="campo" data-form="cp-ficha" novalidate><label for="cp-ficha">Calculá costo y fecha de llegada: código postal</label><div class="fila-boton"><input class="input" id="cp-ficha" inputmode="numeric" autocomplete="postal-code" placeholder="Ej.: 1425" maxlength="4" value="' + esc(F.cp) + '"' + (F.errCp ? ' aria-invalid="true" aria-describedby="err-cp-ficha"' : '') + '><button class="btn btn-secundario" type="submit" data-key="calc-ficha">Calcular</button></div>' +
           (F.errCp ? '<span class="msg-error" id="err-cp-ficha" role="alert">' + ICO.alerta + 'El código postal tiene 4 números, por ejemplo 1425</span>' : '') +
-          (F.envio ? '<div class="opciones-envio" aria-live="polite"><span>Retiro en sucursal: <strong>' + plata(ENVIOS.sucursal.precio) + '</strong></span><span>Envío a domicilio: <strong>' + plata(ENVIOS.domicilio.precio) + '</strong></span></div>' : '<span class="ayuda">Sucursal o domicilio, con el costo aproximado</span>') + '</form>' +
-        '<dl class="info-prenda">' +
+          (F.envio ? htmlEnvio(p, F.cp) : '<span class="ayuda">Te mostramos el costo y entre qué días te llega</span>') + '</form>' +
+        (F.envio ? '' : '<dl class="info-prenda">' +
           '<div><dt>' + ICO.reloj + 'Cuándo llega</dt><dd>' + plazoTexto(p) + ' El envío tarda ' + ENVIO_DIAS + ' según tu zona.</dd></div>' +
-          (p.tela ? '<div><dt>' + ICO.info + 'Tela</dt><dd><strong style="font-weight:600">' + esc(p.tela.n) + ':</strong> ' + esc(p.tela.d) + '</dd></div>' : '') +
-          '<div><dt>' + ICO.check + 'Cuidados</dt><dd>Lavar del revés con agua fría y sin lavandina. No usar secarropas. Planchar del revés, sin pasar sobre el bordado.</dd></div>' +
-        '</dl>' +
-        '<button class="btn btn-primario btn-grande btn-bloque" type="button" data-action="agregar" data-key="agregar"' + (p.ok ? '' : ' disabled style="opacity:.55;cursor:not-allowed"') + '>' + (p.ok ? 'Agregar al carrito' : 'Sin stock por ahora') + '</button>' +
+        '</dl>') +
+        '<button class="btn btn-primario btn-grande btn-bloque" type="button" data-action="agregar" data-key="agregar"' + (puede ? '' : ' disabled aria-describedby="btn-falta" style="opacity:.55;cursor:not-allowed"') + '>' + txtBtn + '</button>' +
+        (p.ok && faltan.length ? '<p class="btn-falta" id="btn-falta" aria-live="polite">Falta elegir: ' + esc(faltan.length > 1 ? faltan.slice(0, -1).join(', ') + ' y ' + faltan[faltan.length-1] : faltan[0]) + '.</p>' : '') +
+        acordeonFicha(p, F) +
       '</div>' +
     '</div></div>';
 }
@@ -1404,13 +1551,18 @@ const ACC = {
     ir('confirmado');
   },
   'ig-otra'(){ S.ig = { prenda:'', link:'', archivo:null, texto:'', enviado:false, err:{} }; render(false); $('#titulo-vista').focus(); },
+  'acc-ficha'(el){ const F = S.ficha, i = el.dataset.i; F.acc = Object.assign({}, F.acc); F.acc[i] = !F.acc[i]; render(true); },
   'acc'(el){ const i = Number(el.dataset.i); S.cambios.abierto = S.cambios.abierto === i ? -1 : i; render(true); },
   'ver-pass'(el){ const inp = $('#' + el.dataset.for); const ver = inp.type === 'password'; inp.type = ver ? 'text' : 'password'; el.setAttribute('aria-pressed', ver); el.setAttribute('aria-label', ver ? 'Ocultar contraseña' : 'Mostrar contraseña'); el.innerHTML = ver ? ICO.ojoNo : ICO.ojo; },
   'olvido'(){ const v = leer(['l-email', 'l-pass']); if (!mailOk(v['l-email'].trim())){ S.auth.err = { 'l-email':'Escribí tu email para recuperar la contraseña' }; S.auth.olvido = false; } else { S.auth.err = {}; S.auth.olvido = true; } render(false); restaurar(v); (S.auth.olvido ? cont.querySelector('[data-action="olvido"]') : $('#l-email')).focus(); },
   'salir'(){ const n = S.usuario.nombre.split(' ')[0]; S.usuario = null; ir('inicio'); aviso('Cerraste la sesión. ¡Hasta pronto, ' + esc(n) + '!', null, true); }
 };
 
+document.addEventListener('mousedown', e => { if (e.target.closest('#sugs')) e.preventDefault(); });
+document.addEventListener('focusout', e => { if (e.target.id === 'q') setTimeout(() => { if (document.activeElement !== $('#q')) cerrarSugs(); }, 120); });
 document.addEventListener('click', e => {
+  const sg = e.target.closest('#sugs [data-sug]');
+  if (sg){ elegirSug(Number(sg.dataset.sug)); return; }
   const go = e.target.closest('[data-go]');
   if (go){ e.preventDefault(); ir(go.dataset.go, { producto:go.dataset.producto, stock:go.dataset.stock, coleccion:go.dataset.coleccion, prenda:go.dataset.prenda, tematica:go.dataset.tematica, caso:go.dataset.caso, mantener:go.dataset.mantener }); return; }
   const a = e.target.closest('[data-action]');
@@ -1419,6 +1571,12 @@ document.addEventListener('click', e => {
   if (!mega.hidden && !e.target.closest('#mega') && !e.target.closest('#btn-mega')) cerrarMega(false);
 });
 document.addEventListener('keydown', e => {
+  if (e.target.id === 'q'){
+    if (e.key === 'ArrowDown'){ e.preventDefault(); if ($('#sugs').hidden) actualizarSugs(); else moverSug(1); return; }
+    if (e.key === 'ArrowUp'){ e.preventDefault(); moverSug(-1); return; }
+    if (e.key === 'Enter' && SUG.activo >= 0 && !$('#sugs').hidden){ e.preventDefault(); elegirSug(SUG.activo); return; }
+    if (e.key === 'Escape' && !$('#sugs').hidden){ e.preventDefault(); cerrarSugs(); return; }
+  }
   if (e.key !== 'Escape') return;
   if ($('#modal-talles').open) return;
   if (!$('#mega').hidden){ cerrarMega(true); return; }
@@ -1448,6 +1606,7 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('input', e => {
   const el = e.target, c = el.dataset.campo;
+  if (el.id === 'q'){ actualizarSugs(); return; }
   if (c === 'idea-texto') S.idea.texto = el.value;
   if (c === 'ficha-extra') S.ficha.extra = el.value;
   else if (c === 'ig-link') S.ig.link = el.value;
@@ -1458,7 +1617,7 @@ document.addEventListener('input', e => {
 document.addEventListener('submit', e => {
   e.preventDefault();
   const f = e.target;
-  if (f.id === 'form-buscar'){ ir('catalogo', { q:$('#q').value.trim() }); return; }
+  if (f.id === 'form-buscar'){ cerrarSugs(); ir('catalogo', { q:$('#q').value.trim() }); return; }
   const tipo = f.dataset.form;
   if (tipo === 'cp-ficha'){
     const ok = /^\d{4}$/.test(S.ficha.cp); S.ficha.errCp = !ok; S.ficha.envio = ok; if (ok) S.envio.cp = S.ficha.cp;
