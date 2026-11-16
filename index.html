@@ -419,11 +419,7 @@ body:has(.modal[open]){overflow:hidden}
 .visor3d{position:absolute;inset:0;touch-action:pan-y;cursor:grab}
 .visor3d:active{cursor:grabbing}
 .visor3d canvas{width:100%!important;height:100%!important;display:block;border-radius:inherit}
-.vista-toggle{position:absolute;right:12px;top:12px;display:flex;gap:4px;padding:4px;border-radius:999px;background:rgba(255,255,255,.92);box-shadow:0 1px 4px rgba(0,0,0,.12);z-index:2}
-.vista-toggle button{min-height:36px;padding:0 14px;border:0;border-radius:999px;background:transparent;font-size:14px;font-weight:600;color:var(--azul);cursor:pointer}
-.vista-toggle button[aria-pressed="true"]{background:var(--azul);color:#fff}
 .previa-hint{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:13px;color:var(--gris);pointer-events:none}
-.ar-fila{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-top:-6px}
 .credito-3d{font-size:12px;color:var(--gris)}
 .credito-3d a{color:inherit}
 .previa-carga{position:absolute;inset:auto 0 16px 0;text-align:center;font-size:14px;color:var(--gris)}
@@ -674,7 +670,7 @@ const S = {
   vista:'inicio',
   filtros:{ prenda:'Todas', tema:'Todas', coleccion:'Todas', stock:'Todos', q:'', orden:'Destacados' },
   ficha:{ id:P_INICIAL.id, sel:selInicial(P_INICIAL), cantidad:1, foto:0, err:false, sinStock:false, cp:'', envio:false, errCp:false },
-  idea:{ sel:selInicial(P_PERS), archivo:null, url:null, texto:'', err:false, errOp:false, hilo:'original', tam:1, pos:'centro', vista:'3d' },
+  idea:{ sel:selInicial(P_PERS), archivo:null, url:null, texto:'', err:false, errOp:false, hilo:'original', tam:1, pos:'centro' },
   carrito:[],
   envio:{ cp:'', opcion:null, errCp:false },
   pago:'tarjeta',
@@ -1186,7 +1182,7 @@ function dibujarBordado(ctx){
 function pintarPrevia(){
   const I0 = S.idea;
   if (I0.url && PV.disUrl !== I0.url){ const u = I0.url; cargarImg(u).then(i => { PV.dis = i; PV.disUrl = u; pintarPrevia(); }).catch(() => { PV.dis = null; PV.disUrl = u; pintarPrevia(); }); }
-  if (I0.vista !== 'foto' && V3.estado !== -1){ pintar3D(); return; }
+  if (V3.estado !== -1){ pintar3D(); return; }
   const cv = document.getElementById('previa'); if (!cv) return;
   if (PV.estado < 2){ prepararPrevia(); return; }
   const I = S.idea;
@@ -1195,8 +1191,8 @@ function pintarPrevia(){
   const ctx = cv.getContext('2d'); ctx.drawImage(PV.buf, 0, 0); dibujarBordado(ctx);
   const t = document.getElementById('previa-carga'); if (t) t.remove();
 }
-/* ---------- Vista previa 3D (three.js) + Realidad aumentada (model-viewer) ---------- */
-const V3 = { estado:0, r:null, sig:'', ar:{ estado:0, sig:'', url:null } };
+/* ---------- Vista previa 3D (three.js) ---------- */
+const V3 = { estado:0, r:null, sig:'' };
 const DEC = { centro:{ x:0, y:1.42, w:[.15,.2,.25] }, pecho:{ x:.095, y:1.465, w:[.085,.105,.13] } };
 function cargar3D(){
   if (V3.estado) return; V3.estado = 1;
@@ -1248,14 +1244,14 @@ function pintar3D(){
   if (sig !== V3.sig){
     V3.sig = sig;
     if (V3.decal){ V3.raiz.remove(V3.decal); V3.decal.geometry.dispose(); V3.decal.material.map.dispose(); V3.decal.material.bumpMap.dispose(); V3.decal.material.dispose(); V3.decal = null; }
-    const pd = DEC[I.pos], ancho = pd.w[I.tam], fb = fuenteBordado(560);
+    const pd = DEC[I.pos], ancho = pd.w[I.tam], fb = fuenteBordado(1100);
     const capa = capaBordado(fb.fuente, fb.w, fb.h, null, null);
     /* relieve del hilo: mapa de alturas a partir de la transparencia */
     const bc = document.createElement('canvas'); bc.width = capa.width; bc.height = capa.height;
     const bx = bc.getContext('2d'); bx.fillStyle = '#000'; bx.fillRect(0, 0, bc.width, bc.height); bx.filter = 'blur(1.2px)'; bx.globalCompositeOperation = 'lighter';
     const tmp = document.createElement('canvas'); tmp.width = capa.width; tmp.height = capa.height; const tx = tmp.getContext('2d'); tx.drawImage(capa, 0, 0); tx.globalCompositeOperation = 'source-in'; tx.fillStyle = '#fff'; tx.fillRect(0, 0, tmp.width, tmp.height);
     bx.drawImage(tmp, 0, 0);
-    const map = new T.CanvasTexture(capa); map.colorSpace = T.SRGBColorSpace; map.anisotropy = 8;
+    const map = new T.CanvasTexture(capa); map.colorSpace = T.SRGBColorSpace; map.anisotropy = V3.r.capabilities.getMaxAnisotropy(); map.generateMipmaps = true; map.minFilter = T.LinearMipmapLinearFilter;
     const bump = new T.CanvasTexture(bc);
     const mat = new T.MeshStandardMaterial({ map, bumpMap:bump, bumpScale:1.6, transparent:true, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-4, roughness:I.hilo === 'dorado' ? .35 : .7, metalness:I.hilo === 'dorado' ? .55 : 0 });
     const rc = new T.Raycaster(new T.Vector3(pd.x, pd.y - V3.c.y, 2), new T.Vector3(0, 0, -1));
@@ -1265,60 +1261,31 @@ function pintar3D(){
       const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld).lerp(new T.Vector3(0, 0, 1), .5).normalize();
       const aux = new T.Object3D(); aux.position.copy(hit.point); aux.lookAt(hit.point.clone().add(n));
       const geo = new V3.D.DecalGeometry(hit.object, hit.point, aux.rotation, new T.Vector3(ancho, ancho * fb.h / fb.w, .12));
-      const pos = geo.attributes.position; // DecalGeometry devuelve coordenadas de mundo: las pasamos al grupo
-      const inv = V3.raiz.matrixWorld.clone().invert(); const v = new T.Vector3();
-      for (let i = 0; i < pos.count; i++){ v.fromBufferAttribute(pos, i).applyMatrix4(inv); pos.setXYZ(i, v.x, v.y, v.z); }
+      const pos = geo.attributes.position, nor = geo.attributes.normal; // coordenadas de mundo → grupo, y 1,5 mm hacia afuera para que no parpadee
+      const inv = V3.raiz.matrixWorld.clone().invert(); const v = new T.Vector3(), nv = new T.Vector3();
+      for (let i = 0; i < pos.count; i++){ nv.fromBufferAttribute(nor, i); v.fromBufferAttribute(pos, i).addScaledVector(nv, .0015).applyMatrix4(inv); pos.setXYZ(i, v.x, v.y, v.z); }
       V3.decal = new T.Mesh(geo, mat); V3.decal.name = 'Bordado'; V3.raiz.add(V3.decal);
     }
   }
   V3.dibujar();
   const t = document.getElementById('previa-carga'); if (t) t.remove();
 }
-window.addEventListener('resize', () => { if (S.vista === 'idea' && V3.estado === 2 && S.idea.vista !== 'foto'){ ajustar3D(); V3.dibujar(); } });
-/* RA: exporta el buzo tal como está (color + bordado) y lo abre con la cámara del celular */
-function prepararAR(){
-  const A = V3.ar; if (V3.estado !== 2) return;
-  A.estado = 1; A.sig = V3.sig; render(true);
-  Promise.all([import('three/addons/exporters/GLTFExporter.js'), customElements.get('model-viewer') ? null : import('https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js')]).then(([X]) => {
-    const raiz = V3.raiz.clone(); raiz.scale.setScalar(1); raiz.position.set(0, -box3Min(), 0);
-    new X.GLTFExporter().parse(raiz, glb => {
-      if (A.url) URL.revokeObjectURL(A.url);
-      A.url = URL.createObjectURL(new Blob([glb], { type:'model/gltf-binary' }));
-      let mv = document.getElementById('mv-ar');
-      if (!mv){ mv = document.createElement('model-viewer'); mv.id = 'mv-ar'; mv.setAttribute('ar', ''); mv.setAttribute('ar-modes', 'webxr scene-viewer quick-look'); mv.setAttribute('ar-scale', 'fixed'); mv.setAttribute('ar-placement', 'floor'); mv.setAttribute('loading', 'eager'); mv.setAttribute('reveal', 'auto'); mv.style.cssText = 'position:fixed;width:4px;height:4px;left:0;bottom:0;opacity:0;pointer-events:none;z-index:-1'; document.body.appendChild(mv); }
-      let hecho = false; const fin = () => { if (hecho) return; hecho = true; A.estado = 2; A.puede = mv.canActivateAR; render(true); };
-      mv.addEventListener('load', fin, { once:true }); setTimeout(fin, 9000);
-      mv.setAttribute('src', A.url);
-    }, err => { A.estado = -1; render(true); }, { binary:true });
-  }).catch(() => { A.estado = -1; render(true); });
-}
-function box3Min(){ const b = new V3.T.Box3().setFromObject(V3.raiz); return b.min.y; }
-function botonAR(){
-  const A = V3.ar, I = S.idea;
-  if (V3.estado !== 2 || I.vista === 'foto') return '';
-  const listo = A.estado === 2 && A.sig === V3.sig;
-  const txt = A.estado === 1 ? 'Preparando la RA…' : listo ? (A.puede ? 'Abrir la cámara y verlo en tu espacio' : 'Velo en tu espacio') : 'Velo en tu espacio (RA)';
-  return '<div class="ar-fila"><button class="btn btn-secundario" type="button" data-action="ar" data-key="ar"' + (A.estado === 1 ? ' disabled aria-busy="true"' : '') + '>' + txt + '</button>' +
-    (listo && !A.puede ? '<span class="ayuda" role="status" style="flex:1 1 220px">La realidad aumentada funciona desde el celular (Android o iPhone). Abrí esta página en tu teléfono.</span>' : listo ? '<span class="ayuda" role="status">Apuntá la cámara al piso o a una mesa.</span>' : '') +
-    '</div>';
-}
+window.addEventListener('resize', () => { if (S.vista === 'idea' && V3.estado === 2){ ajustar3D(); V3.dibujar(); } });
 function miniPrevia(){
-  if (V3.estado === 2 && S.idea.vista !== 'foto'){ try { V3.dibujar(); const m = document.createElement('canvas'); m.width = m.height = 320; const c = V3.r.domElement; m.getContext('2d').drawImage(c, 0, 0, c.width, c.height, 0, 0, 320, 320); return m.toDataURL('image/jpeg', .85); } catch(e){} }
+  if (V3.estado === 2){ try { V3.dibujar(); const m = document.createElement('canvas'); m.width = m.height = 320; const c = V3.r.domElement; m.getContext('2d').drawImage(c, 0, 0, c.width, c.height, 0, 0, 320, 320); return m.toDataURL('image/jpeg', .85); } catch(e){} }
   const cv = document.getElementById('previa'); if (!cv || PV.estado < 2) return null;
   try { const m = document.createElement('canvas'); m.width = m.height = 320; m.getContext('2d').drawImage(cv, 110, 60, 1100, 1100, 0, 0, 320, 320); return m.toDataURL('image/jpeg', .85); } catch(e){ return null; }
 }
 
 function vIdea(){
-  const I = S.idea, p = P_PERS, es3D = I.vista !== 'foto' && V3.estado !== -1;
+  const I = S.idea, p = P_PERS, es3D = V3.estado !== -1;
   return '<div class="vista">' +
     '<div class="cabecera" style="gap:18px"><h1 tabindex="-1" id="titulo-vista">Tu idea, nuestro bordado</h1>' + pasos(0) + '</div>' +
     '<div class="dos-col">' +
       '<div class="campo previa-col" style="gap:20px"><div class="foto-principal previa" style="aspect-ratio:1/1;overflow:hidden">' +
           (es3D ? '<div class="visor3d" id="visor3d"></div><span class="previa-hint" aria-hidden="true">Arrastrá para girarlo</span>' : '<canvas id="previa" width="1400" height="1400" role="img" aria-label="' + esc(descPrevia()) + '"></canvas>') +
           '<span class="previa-tag">' + ICO.info + (es3D ? 'Vista 3D en vivo' : 'Vista previa en vivo') + '</span>' +
-          (V3.estado !== -1 ? '<div class="vista-toggle" role="group" aria-label="Tipo de vista previa"><button type="button" data-action="vista-previa" data-v="3d" data-key="vp-3d" aria-pressed="' + es3D + '">3D</button><button type="button" data-action="vista-previa" data-v="foto" data-key="vp-foto" aria-pressed="' + !es3D + '">Foto</button></div>' : '') +
           ((es3D ? V3.estado === 2 : PV.estado === 2) ? '' : '<span class="previa-carga" id="previa-carga">' + (es3D ? 'Cargando el buzo en 3D…' : 'Cargando vista previa…') + '</span>') + '</div>' +
-        botonAR() +
         (es3D ? '<p class="credito-3d">Modelo 3D: <a href="https://sketchfab.com/3d-models/hoodiebasemodel-340b9e30d622464d8a27bd732ab8b75a" target="_blank" rel="noopener">HoodieBaseModel</a> de Marashe (Sketchfab), licencia CC BY 4.0.</p>' : '') +
         '<p class="cuotas" style="margin:-8px 0 0">' + (I.url ? 'Así queda tu diseño bordado en el buzo. Probá colores, hilos y tamaños.' : 'Elegí el color y subí tu imagen: la vas a ver bordada en el buzo al instante.') + '</p>' +
         '<p class="aviso aviso-info">' + ICO.info + '<span><strong>Cómo sigue:</strong> después de la compra, el equipo revisa que el bordado se pueda hacer y te escribe para aprobar el diseño antes de producirlo.</span></p></div>' +
@@ -1664,12 +1631,6 @@ const ACC = {
     render(true); },
   'hilo'(el){ const I = S.idea; I.hilo = el.dataset.v; if (K_DORADO >= 0) I.sel[K_DORADO] = I.hilo === 'dorado' ? 1 : 0; render(true); },
   'tam'(el){ S.idea.tam = Number(el.dataset.v); render(true); },
-  'vista-previa'(el){ S.idea.vista = el.dataset.v; render(true); },
-  'ar'(){
-    const A = V3.ar;
-    if (A.estado === 2 && A.sig === V3.sig){ const mv = document.getElementById('mv-ar'); if (mv && A.puede){ mv.activateAR(); return; } aviso('Abrí esta página en tu celular para ver el buzo en tu espacio.', null, true); return; }
-    prepararAR();
-  },
   'pos'(el){ S.idea.pos = el.dataset.v; render(true); },
   'foto'(el){ S.ficha.foto = Number(el.dataset.v); render(true); },
   'cant'(el){ S.ficha.cantidad = Math.max(1, Math.min(10, S.ficha.cantidad + Number(el.dataset.v))); render(true); },
