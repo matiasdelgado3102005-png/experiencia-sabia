@@ -617,8 +617,8 @@ const P_PERS = CAT.find(p => p.id.indexOf('buzo-personalizado') === 0) || CAT[0]
 /* En el personalizado el talle es solo S, M o L (sin variantes con capucha ni vintage) */
 (function(){
   const k = P_PERS.o.findIndex(o => /talle/i.test(o.l)); if (k < 0) return;
-  const viejos = P_PERS.o[k].v, nuevos = ['S','M','L'];
-  const mapa = viejos.map(v => { const m = /^oversize talle ([sml])$/i.exec(v.trim()); return m ? nuevos.indexOf(m[1].toUpperCase()) : -1; });
+  const viejos = P_PERS.o[k].v, letras = ['S','M','L'], nuevos = letras.map(t => 'Oversize talle ' + t);
+  const mapa = viejos.map(v => { const m = /^oversize talle ([sml])$/i.exec(v.trim()); return m ? letras.indexOf(m[1].toUpperCase()) : -1; });
   P_PERS.o[k].v = nuevos;
   P_PERS.vs = P_PERS.vs.filter(v => mapa[v[k]] >= 0).map(v => { const c = v.slice(); c[k] = mapa[v[k]]; return c; });
 })();
