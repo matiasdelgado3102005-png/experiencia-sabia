@@ -614,6 +614,14 @@ const TEMAS = ['Todas','Universidades','Argentina','Fútbol','Artistas y bandas'
 const COLECCIONES = ['Todas','Prendas en promo','Colección Argentina','Colección Inmortales','BTS','Los Redondos','Spiderman','Sabía edición verano'];
 const ORDENES = ['Destacados','Menor precio','Mayor precio','Nombre A–Z'];
 const P_PERS = CAT.find(p => p.id.indexOf('buzo-personalizado') === 0) || CAT[0];
+/* En el personalizado el talle es solo S, M o L (sin variantes con capucha ni vintage) */
+(function(){
+  const k = P_PERS.o.findIndex(o => /talle/i.test(o.l)); if (k < 0) return;
+  const viejos = P_PERS.o[k].v, nuevos = ['S','M','L'];
+  const mapa = viejos.map(v => { const m = /^oversize talle ([sml])$/i.exec(v.trim()); return m ? nuevos.indexOf(m[1].toUpperCase()) : -1; });
+  P_PERS.o[k].v = nuevos;
+  P_PERS.vs = P_PERS.vs.filter(v => mapa[v[k]] >= 0).map(v => { const c = v.slice(); c[k] = mapa[v[k]]; return c; });
+})();
 const P_INICIAL = porNombre('Buzo AFA (a pedido)') || CAT[0];
 const ENVIOS = { sucursal:{ nombre:'Retiro en sucursal', precio:6500 }, domicilio:{ nombre:'Envío a domicilio', precio:8046 } };
 /* Días hábiles de viaje según la zona del código postal */
