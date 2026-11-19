@@ -275,6 +275,10 @@ main{display:block;padding-block:28px 72px}
 .faq details p{margin:0 0 18px;color:var(--gris)}
 @media (max-width:600px){.toast{font-size:14px;padding:8px 8px 8px 14px;border-radius:14px}.toast .btn-toast{min-height:40px}.toasts{bottom:calc(10px + env(safe-area-inset-bottom, 0px))}}
 .acc-panel .bloque{display:flex;flex-direction:column;gap:4px}
+.quitado{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding:14px 18px;margin-block:10px;border-radius:14px;background:var(--azul-cla);font-size:15px}
+.quitado .btn,.confirmar .btn{min-height:40px;padding:0 18px;font-size:15px}
+.confirmar{display:flex;flex-direction:column;gap:10px;margin-top:10px;padding:14px 16px;border-radius:14px;background:var(--rosa-cla);box-shadow:0 0 0 1.5px var(--rosa-osc)}
+.confirmar .fila{display:flex;flex-wrap:wrap;gap:10px}
 /* Autocompletado del buscador */
 .buscador{position:relative}
 .sugs{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:60;margin:0;padding:8px;list-style:none;background:var(--blanco);border-radius:16px;box-shadow:0 0 0 1px var(--divisor),0 12px 32px rgba(0,0,0,.16);max-height:min(70vh,520px);overflow:auto}
@@ -1324,19 +1328,29 @@ function totales(){
   const envio = (/^\d{4}$/.test(S.envio.cp) && S.envio.opcion) ? ENVIOS[S.envio.opcion].precio : 0;
   return { sub, desc, envio, total: sub - desc + envio };
 }
+function quitarItem(i){
+  const it = S.carrito.splice(i, 1)[0]; S.confirmar = null; S.quitado = { i, it };
+  render(false); actualizarHeader();
+  const b = cont.querySelector('[data-key="deshacer-quitar"]'); if (b) b.focus();
+}
+function filaQuitado(){
+  const Q = S.quitado; if (!Q) return '';
+  return '<div class="quitado" role="status"><span>Quitaste <strong style="font-weight:600">' + esc(Q.it.nombre) + '</strong> del carrito.</span><button class="btn btn-secundario" type="button" data-action="deshacer-quitar" data-key="deshacer-quitar">Deshacer</button></div>';
+}
 function vCarrito(){
   const C = S.carrito;
-  if (!C.length) return '<div class="vista"><div class="cabecera"><h1 tabindex="-1" id="titulo-vista">Tu carrito</h1></div><div class="vacio"><h2>Tu carrito está vacío</h2><p class="cuotas">Elegí un diseño del catálogo o contanos tu idea.</p><div class="chips" style="justify-content:center"><a class="btn btn-secundario" href="#catalogo" data-go="catalogo">Ver el catálogo</a><a class="btn btn-primario" href="#idea" data-go="idea">Contar mi idea</a></div></div></div>';
+  if (!C.length) return '<div class="vista"><div class="cabecera"><h1 tabindex="-1" id="titulo-vista">Tu carrito</h1></div>' + filaQuitado() + '<div class="vacio"><h2>Tu carrito está vacío</h2><p class="cuotas">Elegí un diseño del catálogo o contanos tu idea.</p><div class="chips" style="justify-content:center"><a class="btn btn-secundario" href="#catalogo" data-go="catalogo">Ver el catálogo</a><a class="btn btn-primario" href="#idea" data-go="idea">Contar mi idea</a></div></div></div>';
   const hayPers = C.some(it => it.tipo === 'personalizado');
   const t = totales(), cpOk = /^\d{4}$/.test(S.envio.cp);
-  const items = C.map((it, i) =>
+  const items = C.map((it, i) => (S.quitado && S.quitado.i === i ? '<li>' + filaQuitado() + '</li>' : '') +
     '<li class="item"><span class="mini-img" style="position:relative;background:var(--crema)">' + imgTag(it.foto, '', true) + '</span><div class="det">' +
       '<h2 style="font-family:var(--texto);font-size:17px;font-weight:600;line-height:1.35">' + esc(it.nombre) + '</h2>' +
       (it.detalle ? '<span class="cuotas">' + esc(it.detalle) + '</span>' : '') +
       '<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:6px"><div class="cantidad chica" role="group" aria-label="Cantidad de ' + esc(it.nombre) + '"><button type="button" data-action="cant-item" data-i="' + i + '" data-v="-1" data-key="ci-menos-' + i + '" aria-label="Restar uno"' + (it.cantidad <= 1 ? ' disabled style="opacity:.4;cursor:not-allowed"' : '') + '>' + ICO.menos + '</button><output aria-live="polite">' + it.cantidad + '</output><button type="button" data-action="cant-item" data-i="' + i + '" data-v="1" data-key="ci-mas-' + i + '" aria-label="Sumar uno"' + (it.cantidad >= 10 ? ' disabled style="opacity:.4;cursor:not-allowed"' : '') + '>' + ICO.mas + '</button></div>' +
-        '<span class="precio-grande" style="font-size:19px;margin-left:auto">' + plata(it.precio * it.cantidad) + '</span><button class="link" type="button" data-action="quitar" data-i="' + i + '" aria-label="Quitar ' + esc(it.nombre) + ' del carrito">Quitar</button></div>' +
+        '<span class="precio-grande" style="font-size:19px;margin-left:auto">' + plata(it.precio * it.cantidad) + '</span><button class="link" type="button" data-action="quitar" data-i="' + i + '" data-key="quitar-' + i + '" aria-label="Quitar ' + esc(it.nombre) + ' del carrito"' + (S.confirmar === i ? ' aria-expanded="true"' : '') + '>Quitar</button></div>' +
+      (S.confirmar === i ? '<div class="confirmar" role="group" aria-labelledby="conf-t"><span id="conf-t"><strong style="font-weight:600">¿Quitar tu buzo personalizado?</strong> Se pierden la imagen y la descripción que cargaste.</span><div class="fila"><button class="btn btn-primario" type="button" data-action="quitar-ok" data-i="' + i + '" data-key="quitar-ok">Sí, quitar</button><button class="btn btn-secundario" type="button" data-action="quitar-no" data-i="' + i + '" data-key="quitar-no">Cancelar</button></div></div>' : '') +
       (it.tipo === 'personalizado' ? '<div class="adj"><span class="thumb">' + (it.url ? '<img src="' + it.url + '" alt="">' : '') + '</span><span style="display:flex;flex-direction:column;gap:2px;min-width:0"><strong style="font-weight:600">Referencia adjunta</strong><span style="color:var(--gris);overflow-wrap:anywhere">' + esc(it.archivo || 'Sin archivo') + (it.texto ? ' · “' + esc(it.texto) + '”' : '') + '</span></span></div>' : '') +
-    '</div></li>').join('');
+    '</div></li>').join('') + (S.quitado && S.quitado.i >= C.length ? '<li>' + filaQuitado() + '</li>' : '');
   const radios = Object.keys(ENVIOS).map(k => '<label class="radio"><input type="radio" name="entrega" value="' + k + '" data-campo="entrega"' + (S.envio.opcion === k ? ' checked' : '') + (cpOk ? '' : ' disabled') + '>' + ENVIOS[k].nombre + '<span class="precio">' + (cpOk ? plata(ENVIOS[k].precio) : '—') + '</span></label>').join('');
   return '<div class="vista">' +
     '<div class="cabecera" style="gap:18px"><h1 tabindex="-1" id="titulo-vista">Tu carrito</h1>' + (hayPers ? pasos(1) : '') + '</div>' +
@@ -1507,6 +1521,7 @@ function ir(vista, datos, desdeHistorial){
     const p = prod(datos.producto);
     if (p && p.id !== S.ficha.id) S.ficha = { id:p.id, sel:selInicial(p), cantidad:1, foto:0, err:false, sinStock:false, cp:S.ficha.cp, envio:S.ficha.envio, errCp:false, extra:'', sinFoto:null };
   }
+  S.quitado = null; S.confirmar = null;
   if (vista === 'cambios') S.cambios.abierto = (datos.caso != null && datos.caso !== '') ? Number(datos.caso) : -1;
   if ((vista === 'login' || vista === 'registro') && S.usuario) vista = 'cuenta';
   if (vista === 'login' || vista === 'registro') S.auth = { err:{}, olvido:false };
@@ -1653,9 +1668,18 @@ const ACC = {
     aviso('<strong>Agregado al carrito.</strong> ' + esc(p.n), { texto:'Ver carrito', go:'carrito' });
   },
   'quitar'(el){
-    const i = Number(el.dataset.i), it = S.carrito.splice(i, 1)[0];
+    const i = Number(el.dataset.i), it = S.carrito[i];
+    /* un personalizado tiene la imagen y la idea cargadas: primero se confirma */
+    if (it.tipo === 'personalizado'){ S.confirmar = i; render(false); const b = cont.querySelector('[data-key="quitar-ok"]'); if (b) b.focus(); return; }
+    quitarItem(i);
+  },
+  'quitar-ok'(el){ quitarItem(Number(el.dataset.i)); },
+  'quitar-no'(el){ const i = Number(el.dataset.i); S.confirmar = null; render(false); const b = cont.querySelector('[data-key="quitar-' + i + '"]'); if (b) b.focus(); },
+  'deshacer-quitar'(){
+    const Q = S.quitado; if (!Q) return;
+    S.carrito.splice(Math.min(Q.i, S.carrito.length), 0, Q.it); S.quitado = null;
     render(false); actualizarHeader(); $('#titulo-vista').focus();
-    aviso('Quitaste ' + esc(it.nombre) + ' del carrito.', { texto:'Deshacer', fn:() => { S.carrito.splice(i, 0, it); render(false); actualizarHeader(); aviso('Lo volvimos a agregar al carrito.', null, true); } }, true);
+    aviso('Lo volvimos a agregar al carrito.', null, true);
   },
   'continuar'(){
     if (!/^\d{4}$/.test(S.envio.cp)){ S.envio.errCp = true; render(false); $('#cp-carrito').focus(); return; }
