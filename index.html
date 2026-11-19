@@ -1306,7 +1306,8 @@ function vIdea(){
         bloquePrecio(p, I.sel) +
         renderOps(p, { sel:I.sel, err:I.errOp }, 'idea') +
         '<div class="campo"><span id="hilo-l" style="font-size:15px;font-weight:600">Color del hilo: <span style="font-weight:400">' + HILOS[I.hilo].n + '</span></span><div class="swatches" role="group" aria-labelledby="hilo-l">' + Object.keys(HILOS).map(k => '<button class="sw" type="button" data-action="hilo" data-v="' + k + '" data-key="hilo-' + k + '" aria-pressed="' + (I.hilo === k) + '" aria-label="' + HILOS[k].n + '" title="' + HILOS[k].n + '"><span style="background:' + HILOS[k].bg + '"></span></button>').join('') + '</div></div>' +
-        '<div class="campo"><span class="lbl" style="font-size:15px;font-weight:600">Adjuntá tu imagen, foto o dibujo</span>' + bloqueAdjuntar('i-archivo', I.archivo, I.url, 'Todavía no subiste nada') + '</div>' +
+        '<div class="campo"><span class="lbl" style="font-size:15px;font-weight:600">Adjuntá tu imagen, foto o dibujo</span>' + bloqueAdjuntar('i-archivo', I.archivo, I.url, 'Todavía no subiste nada') +
+          (I.archivo ? '' : '<button class="link" type="button" style="align-self:flex-start" data-action="ejemplo" data-key="ejemplo">¿No tenés un diseño a mano? Probá con uno de ejemplo</button>') + '</div>' +
         '<div class="campo"><span id="tam-l" style="font-size:15px;font-weight:600">Tamaño y ubicación del bordado</span><div class="chips-op" role="group" aria-labelledby="tam-l">' +
           ['Chico','Mediano','Grande'].map((t, i) => '<button class="chip-op" type="button" data-action="tam" data-v="' + i + '" data-key="tam-' + i + '" aria-pressed="' + (I.tam === i) + '">' + t + '</button>').join('') +
           '<span style="width:8px"></span>' +
@@ -1654,6 +1655,7 @@ const ACC = {
     render(true); },
   'hilo'(el){ const I = S.idea; I.hilo = el.dataset.v; if (K_DORADO >= 0) I.sel[K_DORADO] = I.hilo === 'dorado' ? 1 : 0; render(true); },
   'tam'(el){ S.idea.tam = Number(el.dataset.v); render(true); },
+  'ejemplo'(){ const I = S.idea; I.archivo = 'ejemplo-argentina.png'; I.url = IMGP('ejemplo-argentina.png'); I.err = false; render(false); const x = cont.querySelector('label[for="i-archivo"]'); if (x) x.focus(); aviso('Cargamos un diseño de ejemplo. Probá colores, hilos y tamaños.'); },
   'pos'(el){ S.idea.pos = el.dataset.v; render(true); },
   'foto'(el){ S.ficha.foto = Number(el.dataset.v); render(true); },
   'cant'(el){ S.ficha.cantidad = Math.max(1, Math.min(10, S.ficha.cantidad + Number(el.dataset.v))); render(true); },
